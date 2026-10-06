@@ -2,7 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>TurboWarp Project Player</title>
 
@@ -13,84 +17,145 @@
 
         body {
             margin: 0;
-            padding: 40px 20px;
-            background: #f5f5f5;
-            color: #222;
+            padding: 0;
+
             font-family:
                 -apple-system,
                 BlinkMacSystemFont,
                 "Segoe UI",
                 sans-serif;
+
+            background: #f5f5f5;
+            color: #222;
         }
 
-        main {
-            width: min(800px, 100%);
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        .container {
+            width: min(900px, 94%);
+            margin: 40px auto;
         }
 
         h1 {
-            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #666;
+            margin-bottom: 25px;
         }
 
         .input-area {
             display: flex;
             gap: 10px;
-            margin-top: 25px;
+            margin-bottom: 20px;
         }
 
-        #project-id {
+        #projectId {
             flex: 1;
-            min-width: 0;
+
             padding: 12px;
             font-size: 16px;
+
             border: 1px solid #ccc;
             border-radius: 6px;
         }
 
         button {
             padding: 12px 18px;
-            font-size: 16px;
+
+            font-size: 15px;
+
             border: none;
             border-radius: 6px;
-            cursor: pointer;
+
             background: #4c97ff;
             color: white;
+
+            cursor: pointer;
         }
 
         button:hover {
-            background: #3d82df;
+            background: #4285e5;
         }
 
         button:disabled {
-            opacity: 0.6;
+            background: #aaa;
             cursor: not-allowed;
         }
 
-        #status {
-            margin-top: 20px;
+        .status {
             padding: 12px;
-            background: #f0f0f0;
+
+            margin-bottom: 20px;
+
             border-radius: 6px;
+
+            background: white;
+            border: 1px solid #ddd;
+
             white-space: pre-wrap;
         }
 
-        #project-info {
-            margin-top: 25px;
+        .project-info {
+            display: none;
+
             padding: 20px;
-            background: #fafafa;
+
+            margin-bottom: 20px;
+
+            background: white;
+
+            border: 1px solid #ddd;
             border-radius: 8px;
         }
 
-        #project-info h2 {
+        .project-info h2 {
             margin-top: 0;
         }
 
-        #downloads {
+        .info-row {
+            margin: 8px 0;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 10px;
+
             margin-top: 20px;
+        }
+
+        #playerContainer {
+            display: none;
+
+            margin-top: 20px;
+
+            background: black;
+
+            border-radius: 8px;
+
+            overflow: hidden;
+        }
+
+        #playerFrame {
+            width: 100%;
+            height: 600px;
+
+            border: none;
+
+            display: block;
+        }
+
+        .note {
+            margin-top: 20px;
+
+            color: #777;
+
+            font-size: 13px;
         }
 
         @media (max-width: 600px) {
@@ -98,8 +163,8 @@
                 flex-direction: column;
             }
 
-            button {
-                width: 100%;
+            #playerFrame {
+                height: 500px;
             }
         }
     </style>
@@ -107,93 +172,171 @@
 
 <body>
 
-<main>
+<div class="container">
 
     <h1>TurboWarp Project Player</h1>
 
-    <p>
-        TurboWarp / ScratchのProject IDを入力してください。
-    </p>
+    <div class="description">
+        Scratch / TurboWarp プロジェクトIDを入力してプロジェクトを読み込みます。
+    </div>
 
     <div class="input-area">
 
         <input
-            id="project-id"
             type="text"
-            inputmode="numeric"
+            id="projectId"
             placeholder="例: 1299419976"
+            autocomplete="off"
         >
 
-        <button id="load-button">
+        <button id="loadButton">
             読み込む
         </button>
 
     </div>
 
-    <div id="status">
-        Project IDを入力して「読み込む」を押してください。
+
+    <div
+        id="status"
+        class="status"
+    >
+        プロジェクトIDを入力してください。
     </div>
 
-    <section id="project-info" hidden>
 
-        <h2 id="project-title"></h2>
+    <div
+        id="projectInfo"
+        class="project-info"
+    >
 
-        <p>
-            作者:
-            <span id="project-creator"></span>
-        </p>
+        <h2 id="projectTitle">
+            プロジェクト情報
+        </h2>
 
-        <p>
-            公開状態:
-            <span id="project-visibility"></span>
-        </p>
+        <div class="info-row">
+            <span class="label">
+                作者:
+            </span>
 
-    </section>
+            <span id="projectCreator">
+                不明
+            </span>
+        </div>
 
-    <div id="downloads" hidden>
+        <div class="info-row">
+            <span class="label">
+                公開状態:
+            </span>
 
-        <button id="download-sb3">
-            SB3をダウンロード
-        </button>
+            <span id="projectVisibility">
+                不明
+            </span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">
+                プロジェクトID:
+            </span>
+
+            <span id="projectIdDisplay">
+                -
+            </span>
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                id="downloadSb3Button"
+                disabled
+            >
+                SB3をダウンロード
+            </button>
+
+        </div>
 
     </div>
 
-</main>
+
+    <div
+        id="playerContainer"
+    >
+
+        <iframe
+            id="playerFrame"
+            title="TurboWarp Project Player"
+        ></iframe>
+
+    </div>
 
 
-<script type="module">
+    <div class="note">
+        ※ 現在はSB3の取得・ダウンロードまで対応しています。
+    </div>
+
+</div>
+
+
+<script>
+
+    /*
+     * ==========================================
+     * DOM
+     * ==========================================
+     */
 
     const projectIdInput =
-        document.getElementById("project-id");
+        document.getElementById("projectId");
 
     const loadButton =
-        document.getElementById("load-button");
+        document.getElementById("loadButton");
 
     const status =
         document.getElementById("status");
 
     const projectInfo =
-        document.getElementById("project-info");
+        document.getElementById("projectInfo");
 
     const projectTitle =
-        document.getElementById("project-title");
+        document.getElementById("projectTitle");
 
     const projectCreator =
-        document.getElementById("project-creator");
+        document.getElementById("projectCreator");
 
     const projectVisibility =
-        document.getElementById("project-visibility");
+        document.getElementById("projectVisibility");
 
-    const downloads =
-        document.getElementById("downloads");
+    const projectIdDisplay =
+        document.getElementById("projectIdDisplay");
 
-    const downloadSB3Button =
-        document.getElementById("download-sb3");
+    const downloadSb3Button =
+        document.getElementById("downloadSb3Button");
+
+    const playerContainer =
+        document.getElementById("playerContainer");
+
+    const playerFrame =
+        document.getElementById("playerFrame");
 
 
-    let currentSB3 = null;
+    /*
+     * ==========================================
+     * 現在読み込んでいるプロジェクト
+     * ==========================================
+     */
+
     let currentProjectId = null;
 
+    let currentProjectMetadata = null;
+
+    let currentSb3Buffer = null;
+
+
+    /*
+     * ==========================================
+     * ステータス表示
+     * ==========================================
+     */
 
     function setStatus(message) {
 
@@ -201,6 +344,26 @@
 
     }
 
+
+    /*
+     * ==========================================
+     * プロジェクトID取得
+     * ==========================================
+     */
+
+    function getProjectId() {
+
+        return projectIdInput.value.trim();
+
+    }
+
+
+    /*
+     * ==========================================
+     * TurboWarp API
+     * プロジェクト情報取得
+     * ==========================================
+     */
 
     async function getProjectMetadata(projectId) {
 
@@ -231,6 +394,12 @@
     }
 
 
+    /*
+     * ==========================================
+     * SB3取得
+     * ==========================================
+     */
+
     async function getProjectSB3(projectId, token) {
 
         const url =
@@ -252,46 +421,18 @@
     }
 
 
-    function downloadSB3(data, projectId) {
+    /*
+     * ==========================================
+     * SB3ダウンロード
+     * ==========================================
+     */
 
-        const blob =
-            new Blob(
-                [data],
-                {
-                    type: "application/zip"
-                }
-            );
+    function downloadSB3() {
 
-        const url =
-            URL.createObjectURL(blob);
-
-        const link =
-            document.createElement("a");
-
-        link.href = url;
-        link.download = `${projectId}.sb3`;
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        link.remove();
-
-        URL.revokeObjectURL(url);
-
-    }
-
-
-    async function loadProject() {
-
-        const projectId =
-            projectIdInput.value.trim();
-
-
-        if (!/^\d+$/.test(projectId)) {
+        if (!currentSb3Buffer) {
 
             setStatus(
-                "Project IDには数字だけを入力してください。"
+                "SB3データがありません。先にプロジェクトを読み込んでください。"
             );
 
             return;
@@ -299,108 +440,309 @@
         }
 
 
-        try {
+        const blob =
+            new Blob(
+                [currentSb3Buffer],
+                {
+                    type: "application/zip"
+                }
+            );
 
-            loadButton.disabled = true;
 
-            projectInfo.hidden = true;
-            downloads.hidden = true;
+        const url =
+            URL.createObjectURL(blob);
 
-            currentSB3 = null;
-            currentProjectId = null;
 
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+
+        link.download =
+            `${currentProjectId}.sb3`;
+
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+
+        URL.revokeObjectURL(url);
+
+    }
+
+
+    /*
+     * ==========================================
+     * プロジェクト情報表示
+     * ==========================================
+     */
+
+    function displayProjectMetadata(metadata) {
+
+        currentProjectMetadata =
+            metadata;
+
+
+        projectTitle.textContent =
+            metadata.title ?? "不明";
+
+
+        /*
+         * 作者名
+         *
+         * APIでは
+         *
+         * metadata.author.username
+         *
+         * に入っている
+         */
+
+        projectCreator.textContent =
+            metadata.author?.username ??
+            metadata.creator ??
+            "不明";
+
+
+        projectVisibility.textContent =
+            metadata.visibility ??
+            (
+                metadata.public
+                    ? "public"
+                    : "unknown"
+            );
+
+
+        projectIdDisplay.textContent =
+            metadata.id ?? currentProjectId;
+
+
+        projectInfo.style.display =
+            "block";
+
+    }
+
+
+    /*
+     * ==========================================
+     * プロジェクト読み込み
+     * ==========================================
+     */
+
+    async function loadProject() {
+
+        const projectId =
+            getProjectId();
+
+
+        /*
+         * IDチェック
+         */
+
+        if (!projectId) {
 
             setStatus(
-                "① TurboWarp APIからプロジェクト情報を取得しています……"
+                "プロジェクトIDを入力してください。"
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * 読み込み開始
+         */
+
+        loadButton.disabled =
+            true;
+
+        downloadSb3Button.disabled =
+            true;
+
+
+        projectInfo.style.display =
+            "none";
+
+
+        playerContainer.style.display =
+            "none";
+
+
+        currentProjectId =
+            null;
+
+        currentProjectMetadata =
+            null;
+
+        currentSb3Buffer =
+            null;
+
+
+        try {
+
+            /*
+             * ----------------------------------
+             * Step 1
+             * プロジェクト情報取得
+             * ----------------------------------
+             */
+
+            setStatus(
+                "プロジェクト情報を取得しています..."
             );
 
 
             const metadata =
-                await getProjectMetadata(projectId);
+                await getProjectMetadata(
+                    projectId
+                );
 
+
+            /*
+             * デバッグ用
+             */
 
             console.log(
                 "Project metadata:",
                 metadata
             );
-            
+
+
             console.log(
                 "Creator:",
                 metadata.creator
             );
-            
-            console.log("Metadata keys:", Object.keys(metadata));
-            console.log("Metadata JSON:", JSON.stringify(metadata, null, 2));
 
 
-            projectTitle.textContent =
-                metadata.title ?? "不明";
+            console.log(
+                "Metadata keys:",
+                Object.keys(metadata)
+            );
 
-            projectCreator.textContent =
-                metadata.creator ?? "不明";
 
-            projectVisibility.textContent =
-                metadata.visibility ??
-                (metadata.public ? "public" : "unknown");
+            console.log(
+                "Metadata JSON:",
+                JSON.stringify(
+                    metadata,
+                    null,
+                    2
+                )
+            );
 
+
+            /*
+             * project_token確認
+             */
 
             if (!metadata.project_token) {
 
                 throw new Error(
-                    "project_tokenを取得できませんでした。"
+                    "project_tokenが取得できませんでした。"
                 );
 
             }
 
 
-            setStatus(
-                "② project_tokenを取得しました。\n" +
-                "③ SB3を取得しています……"
+            /*
+             * ----------------------------------
+             * プロジェクト情報表示
+             * ----------------------------------
+             */
+
+            currentProjectId =
+                projectId;
+
+
+            displayProjectMetadata(
+                metadata
             );
 
 
-            const sb3 =
+            /*
+             * ----------------------------------
+             * Step 2
+             * SB3取得
+             * ----------------------------------
+             */
+
+            setStatus(
+                "SB3ファイルを取得しています..."
+            );
+
+
+            const sb3Buffer =
                 await getProjectSB3(
                     projectId,
                     metadata.project_token
                 );
 
 
-            currentSB3 = sb3;
-            currentProjectId = projectId;
+            /*
+             * SB3保存
+             */
+
+            currentSb3Buffer =
+                sb3Buffer;
 
 
-            const sizeMB =
-                sb3.byteLength / 1024 / 1024;
+            /*
+             * SB3取得成功
+             */
+
+            console.log(
+                "SB3取得成功:",
+                sb3Buffer.byteLength,
+                "bytes"
+            );
 
 
-            projectInfo.hidden = false;
-            downloads.hidden = false;
+            downloadSb3Button.disabled =
+                false;
 
+
+            /*
+             * ----------------------------------
+             * 完了
+             * ----------------------------------
+             */
 
             setStatus(
-                "SB3の取得に成功しました！\n\n" +
-                `Project ID: ${projectId}\n` +
-                `SB3サイズ: ${sizeMB.toFixed(2)} MB`
+                "プロジェクトの読み込みに成功しました。"
             );
 
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                "loadProject error:",
+                error
+            );
+
 
             setStatus(
-                `エラー:\n${error.message}`
+                "エラーが発生しました。\n\n" +
+                error.message
             );
+
 
         } finally {
 
-            loadButton.disabled = false;
+            loadButton.disabled =
+                false;
 
         }
 
     }
 
+
+    /*
+     * ==========================================
+     * ボタン
+     * ==========================================
+     */
 
     loadButton.addEventListener(
         "click",
@@ -408,9 +750,21 @@
     );
 
 
+    downloadSb3Button.addEventListener(
+        "click",
+        downloadSB3
+    );
+
+
+    /*
+     * ==========================================
+     * Enterキー
+     * ==========================================
+     */
+
     projectIdInput.addEventListener(
         "keydown",
-        event => {
+        function(event) {
 
             if (event.key === "Enter") {
 
@@ -421,24 +775,6 @@
         }
     );
 
-
-    downloadSB3Button.addEventListener(
-        "click",
-        () => {
-
-            if (!currentSB3 || !currentProjectId) {
-
-                return;
-
-            }
-
-            downloadSB3(
-                currentSB3,
-                currentProjectId
-            );
-
-        }
-    );
 
 </script>
 
