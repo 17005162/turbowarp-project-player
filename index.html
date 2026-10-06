@@ -10,6 +10,14 @@
 
     <title>TurboWarp Project Player</title>
 
+    <!--
+        TurboWarp Scaffolding
+        v0.2.0
+
+        音楽拡張を含む版を使用します。
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -30,7 +38,7 @@
         }
 
         .container {
-            width: min(900px, 94%);
+            width: min(1000px, 94%);
             margin: 40px auto;
         }
 
@@ -53,6 +61,7 @@
             flex: 1;
 
             padding: 12px;
+
             font-size: 16px;
 
             border: 1px solid #ccc;
@@ -90,6 +99,7 @@
             border-radius: 6px;
 
             background: white;
+
             border: 1px solid #ddd;
 
             white-space: pre-wrap;
@@ -105,6 +115,7 @@
             background: white;
 
             border: 1px solid #ddd;
+
             border-radius: 8px;
         }
 
@@ -122,6 +133,7 @@
 
         .buttons {
             display: flex;
+
             flex-wrap: wrap;
 
             gap: 10px;
@@ -129,25 +141,65 @@
             margin-top: 20px;
         }
 
-        #playerContainer {
+        /*
+         * =========================================
+         * TurboWarp Player
+         * =========================================
+         */
+
+        #playerSection {
             display: none;
 
             margin-top: 20px;
+        }
 
-            background: black;
+        #playerSection h2 {
+            margin-bottom: 12px;
+        }
+
+        #playerContainer {
+            width: 100%;
+
+            aspect-ratio: 4 / 3;
+
+            background: #000;
 
             border-radius: 8px;
 
             overflow: hidden;
+
+            position: relative;
         }
 
-        #playerFrame {
+        /*
+         * Scaffolding は
+         * width: 100%;
+         * height: 100%;
+         * を使用するので、
+         * 親要素のサイズを指定します。
+         */
+
+        #project {
             width: 100%;
-            height: 600px;
+            height: 100%;
+        }
 
-            border: none;
+        .player-controls {
+            display: flex;
 
-            display: block;
+            flex-wrap: wrap;
+
+            gap: 10px;
+
+            margin-top: 12px;
+        }
+
+        .player-controls button {
+            background: #333;
+        }
+
+        .player-controls button:hover {
+            background: #444;
         }
 
         .note {
@@ -159,16 +211,19 @@
         }
 
         @media (max-width: 600px) {
+
             .input-area {
                 flex-direction: column;
             }
 
-            #playerFrame {
-                height: 500px;
+            #playerContainer {
+                aspect-ratio: 4 / 3;
             }
+
         }
     </style>
 </head>
+
 
 <body>
 
@@ -179,6 +234,13 @@
     <div class="description">
         Scratch / TurboWarp プロジェクトIDを入力してプロジェクトを読み込みます。
     </div>
+
+
+    <!--
+        =========================================
+        プロジェクトID入力
+        =========================================
+    -->
 
     <div class="input-area">
 
@@ -196,6 +258,12 @@
     </div>
 
 
+    <!--
+        =========================================
+        ステータス
+        =========================================
+    -->
+
     <div
         id="status"
         class="status"
@@ -203,6 +271,12 @@
         プロジェクトIDを入力してください。
     </div>
 
+
+    <!--
+        =========================================
+        プロジェクト情報
+        =========================================
+    -->
 
     <div
         id="projectInfo"
@@ -213,7 +287,9 @@
             プロジェクト情報
         </h2>
 
+
         <div class="info-row">
+
             <span class="label">
                 作者:
             </span>
@@ -221,9 +297,12 @@
             <span id="projectCreator">
                 不明
             </span>
+
         </div>
 
+
         <div class="info-row">
+
             <span class="label">
                 公開状態:
             </span>
@@ -231,9 +310,12 @@
             <span id="projectVisibility">
                 不明
             </span>
+
         </div>
 
+
         <div class="info-row">
+
             <span class="label">
                 プロジェクトID:
             </span>
@@ -241,6 +323,7 @@
             <span id="projectIdDisplay">
                 -
             </span>
+
         </div>
 
 
@@ -258,20 +341,58 @@
     </div>
 
 
+    <!--
+        =========================================
+        TurboWarp Player
+        =========================================
+    -->
+
     <div
-        id="playerContainer"
+        id="playerSection"
     >
 
-        <iframe
-            id="playerFrame"
-            title="TurboWarp Project Player"
-        ></iframe>
+        <h2>
+            プロジェクト
+        </h2>
+
+
+        <div
+            id="playerContainer"
+        >
+
+            <div
+                id="project"
+            ></div>
+
+        </div>
+
+
+        <!--
+            現段階では基本的な実行ボタンだけ。
+            停止・一時停止・高度な設定は
+            次の段階で追加します。
+        -->
+
+        <div
+            class="player-controls"
+        >
+
+            <button
+                id="greenFlagButton"
+                disabled
+            >
+                ▶ 実行
+            </button>
+
+        </div>
 
     </div>
 
 
     <div class="note">
-        ※ 現在はSB3の取得・ダウンロードまで対応しています。
+
+        ※ TurboWarp Scaffoldingを使用してブラウザ上でプロジェクトを実行しています。
+
     </div>
 
 </div>
@@ -312,16 +433,19 @@
     const downloadSb3Button =
         document.getElementById("downloadSb3Button");
 
-    const playerContainer =
-        document.getElementById("playerContainer");
+    const playerSection =
+        document.getElementById("playerSection");
 
-    const playerFrame =
-        document.getElementById("playerFrame");
+    const projectElement =
+        document.getElementById("project");
+
+    const greenFlagButton =
+        document.getElementById("greenFlagButton");
 
 
     /*
      * ==========================================
-     * 現在読み込んでいるプロジェクト
+     * 現在のプロジェクト
      * ==========================================
      */
 
@@ -334,13 +458,121 @@
 
     /*
      * ==========================================
-     * ステータス表示
+     * TurboWarp Scaffolding
+     * ==========================================
+     *
+     * ここで実行環境を作ります。
+     */
+
+    let scaffolding = null;
+
+    let scaffoldingReady = false;
+
+
+    /*
+     * ==========================================
+     * ステータス
      * ==========================================
      */
 
     function setStatus(message) {
 
-        status.textContent = message;
+        status.textContent =
+            message;
+
+    }
+
+
+    /*
+     * ==========================================
+     * Scaffolding初期化
+     * ==========================================
+     */
+
+    function initializeScaffolding() {
+
+        /*
+         * Scaffoldingの読み込み確認
+         */
+
+        if (
+            typeof Scaffolding ===
+            "undefined"
+        ) {
+
+            throw new Error(
+                "TurboWarp Scaffoldingの読み込みに失敗しました。"
+            );
+
+        }
+
+
+        /*
+         * Scaffoldingインスタンス作成
+         */
+
+        scaffolding =
+            new Scaffolding.Scaffolding();
+
+
+        /*
+         * プロジェクトの基本サイズ
+         */
+
+        scaffolding.width =
+            480;
+
+        scaffolding.height =
+            360;
+
+
+        /*
+         * ステージのリサイズ方法
+         */
+
+        scaffolding.resizeMode =
+            "preserve-ratio";
+
+
+        /*
+         * その他の基本設定
+         *
+         * 高度な設定は今後ここに追加します。
+         */
+
+        scaffolding.editableLists =
+            false;
+
+        scaffolding.shouldConnectPeripherals =
+            true;
+
+        scaffolding.usePackagedRuntime =
+            false;
+
+
+        /*
+         * Runtime初期化
+         */
+
+        scaffolding.setup();
+
+
+        /*
+         * HTMLへ追加
+         */
+
+        scaffolding.appendTo(
+            projectElement
+        );
+
+
+        scaffoldingReady =
+            true;
+
+
+        console.log(
+            "TurboWarp Scaffolding initialized."
+        );
 
     }
 
@@ -360,26 +592,33 @@
 
     /*
      * ==========================================
-     * TurboWarp API
      * プロジェクト情報取得
      * ==========================================
      */
 
-    async function getProjectMetadata(projectId) {
+    async function getProjectMetadata(
+        projectId
+    ) {
 
         const url =
             `https://trampoline.turbowarp.org/api/projects/${projectId}`;
 
+
         const response =
             await fetch(url);
 
-        if (response.status === 404) {
+
+        if (
+            response.status ===
+            404
+        ) {
 
             throw new Error(
                 "プロジェクトが存在しないか、共有されていません。"
             );
 
         }
+
 
         if (!response.ok) {
 
@@ -388,6 +627,7 @@
             );
 
         }
+
 
         return await response.json();
 
@@ -400,13 +640,18 @@
      * ==========================================
      */
 
-    async function getProjectSB3(projectId, token) {
+    async function getProjectSB3(
+        projectId,
+        token
+    ) {
 
         const url =
             `https://projects.scratch.mit.edu/${projectId}?token=${encodeURIComponent(token)}`;
 
+
         const response =
             await fetch(url);
+
 
         if (!response.ok) {
 
@@ -415,6 +660,7 @@
             );
 
         }
+
 
         return await response.arrayBuffer();
 
@@ -432,7 +678,7 @@
         if (!currentSb3Buffer) {
 
             setStatus(
-                "SB3データがありません。先にプロジェクトを読み込んでください。"
+                "SB3データがありません。"
             );
 
             return;
@@ -456,20 +702,29 @@
         const link =
             document.createElement("a");
 
-        link.href = url;
+
+        link.href =
+            url;
+
 
         link.download =
             `${currentProjectId}.sb3`;
 
 
-        document.body.appendChild(link);
+        document.body.appendChild(
+            link
+        );
+
 
         link.click();
+
 
         link.remove();
 
 
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(
+            url
+        );
 
     }
 
@@ -480,24 +735,23 @@
      * ==========================================
      */
 
-    function displayProjectMetadata(metadata) {
+    function displayProjectMetadata(
+        metadata
+    ) {
 
         currentProjectMetadata =
             metadata;
 
 
         projectTitle.textContent =
-            metadata.title ?? "不明";
+            metadata.title ??
+            "不明";
 
 
         /*
-         * 作者名
-         *
-         * APIでは
+         * APIの実際の構造：
          *
          * metadata.author.username
-         *
-         * に入っている
          */
 
         projectCreator.textContent =
@@ -516,11 +770,81 @@
 
 
         projectIdDisplay.textContent =
-            metadata.id ?? currentProjectId;
+            metadata.id ??
+            currentProjectId;
 
 
         projectInfo.style.display =
             "block";
+
+    }
+
+
+    /*
+     * ==========================================
+     * TurboWarpプロジェクト読み込み
+     * ==========================================
+     */
+
+    async function loadIntoScaffolding(
+        sb3Buffer
+    ) {
+
+        if (!scaffoldingReady) {
+
+            throw new Error(
+                "TurboWarp Scaffoldingが初期化されていません。"
+            );
+
+        }
+
+
+        setStatus(
+            "TurboWarpにプロジェクトを読み込んでいます..."
+        );
+
+
+        /*
+         * SB3 ArrayBufferを
+         * Scaffoldingへ渡す
+         */
+
+        await scaffolding.loadProject(
+            sb3Buffer
+        );
+
+
+        /*
+         * Player表示
+         */
+
+        playerSection.style.display =
+            "block";
+
+
+        /*
+         * ステージサイズを再計算
+         */
+
+        scaffolding.relayout();
+
+
+        /*
+         * 実行ボタン有効化
+         */
+
+        greenFlagButton.disabled =
+            false;
+
+
+        setStatus(
+            "プロジェクトの読み込みに成功しました。"
+        );
+
+
+        console.log(
+            "TurboWarp project loaded successfully."
+        );
 
     }
 
@@ -553,7 +877,7 @@
 
 
         /*
-         * 読み込み開始
+         * 読み込み中はボタンを無効化
          */
 
         loadButton.disabled =
@@ -562,14 +886,13 @@
         downloadSb3Button.disabled =
             true;
 
+        greenFlagButton.disabled =
+            true;
 
-        projectInfo.style.display =
-            "none";
 
-
-        playerContainer.style.display =
-            "none";
-
+        /*
+         * 古い状態をクリア
+         */
 
         currentProjectId =
             null;
@@ -581,12 +904,16 @@
             null;
 
 
+        playerSection.style.display =
+            "none";
+
+
         try {
 
             /*
              * ----------------------------------
              * Step 1
-             * プロジェクト情報取得
+             * Metadata
              * ----------------------------------
              */
 
@@ -601,35 +928,9 @@
                 );
 
 
-            /*
-             * デバッグ用
-             */
-
             console.log(
                 "Project metadata:",
                 metadata
-            );
-
-
-            console.log(
-                "Creator:",
-                metadata.creator
-            );
-
-
-            console.log(
-                "Metadata keys:",
-                Object.keys(metadata)
-            );
-
-
-            console.log(
-                "Metadata JSON:",
-                JSON.stringify(
-                    metadata,
-                    null,
-                    2
-                )
             );
 
 
@@ -637,7 +938,9 @@
              * project_token確認
              */
 
-            if (!metadata.project_token) {
+            if (
+                !metadata.project_token
+            ) {
 
                 throw new Error(
                     "project_tokenが取得できませんでした。"
@@ -664,7 +967,7 @@
             /*
              * ----------------------------------
              * Step 2
-             * SB3取得
+             * SB3
              * ----------------------------------
              */
 
@@ -680,17 +983,9 @@
                 );
 
 
-            /*
-             * SB3保存
-             */
-
             currentSb3Buffer =
                 sb3Buffer;
 
-
-            /*
-             * SB3取得成功
-             */
 
             console.log(
                 "SB3取得成功:",
@@ -699,18 +994,25 @@
             );
 
 
+            /*
+             * ----------------------------------
+             * SB3ダウンロード
+             * ----------------------------------
+             */
+
             downloadSb3Button.disabled =
                 false;
 
 
             /*
              * ----------------------------------
-             * 完了
+             * Step 3
+             * TurboWarp Scaffoldingへ読み込み
              * ----------------------------------
              */
 
-            setStatus(
-                "プロジェクトの読み込みに成功しました。"
+            await loadIntoScaffolding(
+                sb3Buffer
             );
 
 
@@ -740,7 +1042,39 @@
 
     /*
      * ==========================================
-     * ボタン
+     * 緑旗
+     * ==========================================
+     */
+
+    function startProject() {
+
+        if (
+            !scaffoldingReady
+        ) {
+
+            return;
+
+        }
+
+
+        console.log(
+            "Starting project..."
+        );
+
+
+        scaffolding.greenFlag();
+
+
+        setStatus(
+            "プロジェクトを実行しています。"
+        );
+
+    }
+
+
+    /*
+     * ==========================================
+     * イベント
      * ==========================================
      */
 
@@ -756,17 +1090,24 @@
     );
 
 
+    greenFlagButton.addEventListener(
+        "click",
+        startProject
+    );
+
+
     /*
-     * ==========================================
      * Enterキー
-     * ==========================================
      */
 
     projectIdInput.addEventListener(
         "keydown",
         function(event) {
 
-            if (event.key === "Enter") {
+            if (
+                event.key ===
+                "Enter"
+            ) {
 
                 loadProject();
 
@@ -775,6 +1116,36 @@
         }
     );
 
+
+    /*
+     * ==========================================
+     * ページ読み込み時
+     * Scaffolding初期化
+     * ==========================================
+     */
+
+    try {
+
+        initializeScaffolding();
+
+        console.log(
+            "Player initialization complete."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Scaffolding initialization error:",
+            error
+        );
+
+
+        setStatus(
+            "TurboWarp Playerの初期化に失敗しました。\n\n" +
+            error.message
+        );
+
+    }
 
 </script>
 
