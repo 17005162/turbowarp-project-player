@@ -1,0 +1,2 @@
+# turbowarp-project-player
+TurboWarpプロキシを使ってプロジェクトIDからファイルを取得した後TurboWarp Packagerを使ってhtmlに変換して、iframeに埋め込んで実行します。
