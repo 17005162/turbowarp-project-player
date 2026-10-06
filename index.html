@@ -10,12 +10,7 @@
 
     <title>TurboWarp Project Player</title>
 
-    <!--
-        TurboWarp Scaffolding
-        v0.2.0
-
-        音楽拡張を含む版を使用します。
-    -->
+    <!-- TurboWarp Scaffolding -->
     <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
 
     <style>
@@ -170,14 +165,6 @@
 
             position: relative;
         }
-
-        /*
-         * Scaffolding は
-         * width: 100%;
-         * height: 100%;
-         * を使用するので、
-         * 親要素のサイズを指定します。
-         */
 
         #project {
             width: 100%;
@@ -367,12 +354,6 @@
         </div>
 
 
-        <!--
-            現段階では基本的な実行ボタンだけ。
-            停止・一時停止・高度な設定は
-            次の段階で追加します。
-        -->
-
         <div
             class="player-controls"
         >
@@ -460,8 +441,6 @@
      * ==========================================
      * TurboWarp Scaffolding
      * ==========================================
-     *
-     * ここで実行環境を作ります。
      */
 
     let scaffolding = null;
@@ -492,7 +471,7 @@
     function initializeScaffolding() {
 
         /*
-         * Scaffoldingの読み込み確認
+         * Scaffolding読み込み確認
          */
 
         if (
@@ -508,7 +487,7 @@
 
 
         /*
-         * Scaffoldingインスタンス作成
+         * Scaffoldingインスタンス
          */
 
         scaffolding =
@@ -516,7 +495,11 @@
 
 
         /*
-         * プロジェクトの基本サイズ
+         * ======================================
+         * 基本設定
+         * ======================================
+         *
+         * setup()より前に設定する必要があります。
          */
 
         scaffolding.width =
@@ -525,20 +508,8 @@
         scaffolding.height =
             360;
 
-
-        /*
-         * ステージのリサイズ方法
-         */
-
         scaffolding.resizeMode =
             "preserve-ratio";
-
-
-        /*
-         * その他の基本設定
-         *
-         * 高度な設定は今後ここに追加します。
-         */
 
         scaffolding.editableLists =
             false;
@@ -551,6 +522,33 @@
 
 
         /*
+         * ======================================
+         * Scratchアセット取得設定
+         * ======================================
+         *
+         * ここが今回追加した重要部分です。
+         *
+         * SB3に含まれる画像・SVG・音声を
+         * Scratchのアセットサーバーから
+         * 取得します。
+         */
+
+        const storage =
+            scaffolding.storage;
+
+
+        storage.addWebStore(
+            [
+                storage.AssetType.ImageVector,
+                storage.AssetType.ImageBitmap,
+                storage.AssetType.Sound
+            ],
+            (asset) =>
+                `https://assets.scratch.mit.edu/internalapi/asset/${asset.assetId}.${asset.dataFormat}/get/`
+        );
+
+
+        /*
          * Runtime初期化
          */
 
@@ -558,7 +556,7 @@
 
 
         /*
-         * HTMLへ追加
+         * DOMへ追加
          */
 
         scaffolding.appendTo(
@@ -574,12 +572,16 @@
             "TurboWarp Scaffolding initialized."
         );
 
+        console.log(
+            "Scratch asset WebStore initialized."
+        );
+
     }
 
 
     /*
      * ==========================================
-     * プロジェクトID取得
+     * プロジェクトID
      * ==========================================
      */
 
@@ -749,7 +751,7 @@
 
 
         /*
-         * APIの実際の構造：
+         * APIの実際の構造
          *
          * metadata.author.username
          */
@@ -782,7 +784,7 @@
 
     /*
      * ==========================================
-     * TurboWarpプロジェクト読み込み
+     * ScaffoldingへSB3読み込み
      * ==========================================
      */
 
@@ -805,8 +807,7 @@
 
 
         /*
-         * SB3 ArrayBufferを
-         * Scaffoldingへ渡す
+         * SB3 ArrayBufferを読み込む
          */
 
         await scaffolding.loadProject(
@@ -823,7 +824,7 @@
 
 
         /*
-         * ステージサイズを再計算
+         * レイアウト更新
          */
 
         scaffolding.relayout();
@@ -861,10 +862,6 @@
             getProjectId();
 
 
-        /*
-         * IDチェック
-         */
-
         if (!projectId) {
 
             setStatus(
@@ -877,7 +874,7 @@
 
 
         /*
-         * 読み込み中はボタンを無効化
+         * ボタン無効化
          */
 
         loadButton.disabled =
@@ -891,7 +888,7 @@
 
 
         /*
-         * 古い状態をクリア
+         * 古い状態
          */
 
         currentProjectId =
@@ -902,10 +899,6 @@
 
         currentSb3Buffer =
             null;
-
-
-        playerSection.style.display =
-            "none";
 
 
         try {
@@ -935,7 +928,7 @@
 
 
             /*
-             * project_token確認
+             * Token確認
              */
 
             if (
@@ -950,9 +943,7 @@
 
 
             /*
-             * ----------------------------------
              * プロジェクト情報表示
-             * ----------------------------------
              */
 
             currentProjectId =
@@ -995,9 +986,7 @@
 
 
             /*
-             * ----------------------------------
-             * SB3ダウンロード
-             * ----------------------------------
+             * SB3ダウンロード有効化
              */
 
             downloadSb3Button.disabled =
@@ -1007,7 +996,7 @@
             /*
              * ----------------------------------
              * Step 3
-             * TurboWarp Scaffoldingへ読み込み
+             * TurboWarp読み込み
              * ----------------------------------
              */
 
@@ -1119,7 +1108,6 @@
 
     /*
      * ==========================================
-     * ページ読み込み時
      * Scaffolding初期化
      * ==========================================
      */
