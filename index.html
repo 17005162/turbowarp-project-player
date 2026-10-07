@@ -2,14 +2,25 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>TurboWarp Project Player</title>
 
     <!-- TurboWarp Scaffolding -->
-    <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js">
+    </script>
+
 
     <style>
+
+        /* =========================================================
+           基本
+        ========================================================= */
+
         * {
             box-sizing: border-box;
         }
@@ -18,6 +29,7 @@
         body {
             margin: 0;
             padding: 0;
+
             width: 100%;
             min-height: 100%;
         }
@@ -30,48 +42,72 @@
                 Meiryo,
                 sans-serif;
 
-            background: #111;
-            color: white;
+            /*
+             * 通常時は白背景
+             */
+            background: white;
+            color: black;
 
             overflow-x: hidden;
         }
 
 
         /* =========================================================
-           上部UI
+           上部入力エリア
         ========================================================= */
 
         #topArea {
             width: 100%;
+
             padding: 20px;
         }
 
         #inputArea {
             display: flex;
+
             flex-wrap: wrap;
+
             align-items: center;
+
             gap: 8px;
 
+            width: 100%;
             max-width: 1000px;
+
             margin: 0 auto;
         }
+
+
+        /* プロジェクトID入力 */
 
         #projectIdInput {
             flex: 1;
 
             min-width: 250px;
+
             height: 40px;
 
             padding: 0 12px;
 
-            border: 1px solid #555;
+            border: 1px solid #aaa;
             border-radius: 6px;
 
-            background: #222;
-            color: white;
+            background: white;
+            color: black;
 
             font-size: 16px;
+
+            outline: none;
         }
+
+        #projectIdInput:focus {
+            border-color: #666;
+        }
+
+
+        /* =========================================================
+           ボタン
+        ========================================================= */
 
         #loadButton,
         #stopButton,
@@ -80,11 +116,11 @@
 
             padding: 0 16px;
 
-            border: none;
+            border: 1px solid #aaa;
             border-radius: 6px;
 
-            background: #444;
-            color: white;
+            background: #f0f0f0;
+            color: #222;
 
             font-size: 15px;
 
@@ -94,13 +130,20 @@
         #loadButton:hover,
         #stopButton:hover,
         #downloadButton:hover {
-            background: #666;
+            background: #e2e2e2;
+        }
+
+        #loadButton:active,
+        #stopButton:active,
+        #downloadButton:active {
+            background: #d5d5d5;
         }
 
         #loadButton:disabled,
         #stopButton:disabled,
         #downloadButton:disabled {
             opacity: 0.5;
+
             cursor: default;
         }
 
@@ -110,13 +153,17 @@
         ========================================================= */
 
         #status {
+            width: 100%;
             max-width: 1000px;
-
-            margin: 10px auto 0;
 
             min-height: 24px;
 
-            color: #ccc;
+            margin: 10px auto 0;
+
+            padding: 0 20px;
+
+            color: #333;
+
             font-size: 14px;
         }
 
@@ -126,33 +173,39 @@
         ========================================================= */
 
         #projectInfo {
+            display: none;
+
+            width: 100%;
             max-width: 1000px;
 
             margin: 10px auto;
 
             padding: 10px 14px;
 
+            border: 1px solid #ddd;
             border-radius: 6px;
 
-            background: #222;
+            background: #f5f5f5;
 
-            color: #ddd;
+            color: #333;
 
             font-size: 14px;
-
-            display: none;
         }
 
         #projectInfo strong {
-            color: white;
+            color: #111;
         }
 
 
         /* =========================================================
-           ステージエリア
+           ステージ全体
         ========================================================= */
 
         #stageContainer {
+            width: 100%;
+
+            margin-top: 20px;
+
             display: flex;
 
             flex-direction: column;
@@ -160,22 +213,18 @@
             align-items: center;
 
             justify-content: flex-start;
-
-            width: 100%;
-
-            margin-top: 20px;
         }
 
 
         /* =========================================================
-           ステージ上部ツールバー
+           ステージツールバー
         ========================================================= */
 
         #stageToolbar {
             width: 480px;
-            height: 52px;
+            height: 46px;
 
-            flex: 0 0 52px;
+            flex: 0 0 46px;
 
             display: flex;
 
@@ -183,8 +232,17 @@
 
             justify-content: flex-end;
 
+            margin: 0;
+            padding: 0;
+
             background: transparent;
         }
+
+
+        /*
+         * 将来スタート・一時停止・停止ボタンを
+         * 追加するための領域
+         */
 
         #stageControls {
             display: flex;
@@ -197,43 +255,54 @@
         }
 
 
-        /* 最大化ボタン */
+        /* =========================================================
+           最大化ボタン
+        ========================================================= */
 
         #maximizeButton {
-            width: 62px;
-            height: 52px;
+            width: 48px;
+            height: 42px;
 
             padding: 0;
 
             border: none;
-            border-radius: 7px;
+            border-radius: 6px;
 
             background: white;
             color: #444;
 
-            font-size: 30px;
+            font-size: 23px;
+
             line-height: 1;
 
             cursor: pointer;
 
             box-shadow:
                 0 1px 3px rgba(0, 0, 0, 0.35);
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
         }
 
         #maximizeButton:hover {
-            background: #eee;
+            background: #eeeeee;
         }
 
         #maximizeButton:active {
-            background: #ddd;
+            background: #dddddd;
         }
 
 
         /* =========================================================
-           TurboWarp / Scratch ステージ
+           TurboWarpステージ
         ========================================================= */
 
         #project {
+            /*
+             * 通常時はScratch標準サイズ
+             */
             width: 480px !important;
             height: 360px !important;
 
@@ -249,18 +318,27 @@
             background: black;
         }
 
+
         /*
-         * Scaffoldingが生成したルート要素を
-         * #projectいっぱいにする。
+         * 重要:
+         *
+         * Scaffolding内部の要素に
+         *
+         * #project > * {
+         *     width: 100%;
+         *     height: 100%;
+         * }
+         *
+         * のような強制指定はしない。
+         *
+         * Scaffolding自身にレイアウトを任せる。
+         *
+         * これによって通常時のマウス座標ズレを防ぐ。
          */
-        #project > * {
-            width: 100% !important;
-            height: 100% !important;
-        }
 
 
         /* =========================================================
-           SB3ダウンロード
+           ダウンロードエリア
         ========================================================= */
 
         #downloadArea {
@@ -282,9 +360,11 @@
             overflow: hidden;
         }
 
+
         /*
-         * 最大化時はページ上部UIを隠す
+         * 最大化時は通常ページUIを隠す
          */
+
         body.maximized #topArea,
         body.maximized #status,
         body.maximized #projectInfo,
@@ -294,8 +374,9 @@
 
 
         /*
-         * ステージ全体を画面いっぱいにする
+         * 最大化時のステージコンテナ
          */
+
         body.maximized #stageContainer {
             position: fixed;
 
@@ -316,6 +397,9 @@
 
             justify-content: center;
 
+            /*
+             * 黒背景は最大化時だけ
+             */
             background: black;
 
             z-index: 99999;
@@ -323,12 +407,15 @@
 
 
         /*
-         * 最大化時のツールバー
+         * 最大化時ツールバー
          *
-         * JavaScriptでwidthを変更する
+         * JavaScriptでwidthをステージと同じにする
          */
+
         body.maximized #stageToolbar {
-            flex: 0 0 auto;
+            flex: 0 0 46px;
+
+            height: 46px;
 
             margin: 0;
             padding: 0;
@@ -338,11 +425,11 @@
 
 
         /*
-         * 最大化時のプロジェクト
+         * 最大化時ステージ
          *
-         * width / height はJavaScriptから
-         * 4:3になるように直接指定する。
+         * width / height はJavaScriptで直接設定する。
          */
+
         body.maximized #project {
             flex: 0 0 auto;
 
@@ -356,15 +443,12 @@
             background: black;
         }
 
-        body.maximized #project > * {
-            width: 100% !important;
-            height: 100% !important;
-        }
     </style>
 </head>
 
 
 <body>
+
 
     <!-- =========================================================
          上部UI
@@ -381,11 +465,18 @@
                 autocomplete="off"
             >
 
-            <button id="loadButton">
+            <button
+                id="loadButton"
+                type="button"
+            >
                 読み込み
             </button>
 
-            <button id="stopButton" disabled>
+            <button
+                id="stopButton"
+                type="button"
+                disabled
+            >
                 停止
             </button>
 
@@ -416,18 +507,21 @@
 
     <div id="stageContainer">
 
-        <!-- ステージ上部 -->
+        <!-- ステージ上部ツールバー -->
+
         <div id="stageToolbar">
 
             <div id="stageControls">
                 <!--
-                    今後ここに
+                    将来的に
                     スタート / 一時停止 / 停止
-                    ボタンを追加できます。
+                    ボタンをここへ追加可能
                 -->
             </div>
 
-            <!-- 最大化 -->
+
+            <!-- 最大化ボタン -->
+
             <button
                 id="maximizeButton"
                 type="button"
@@ -439,20 +533,22 @@
         </div>
 
 
-        <!-- TurboWarp Scaffolding -->
+        <!-- TurboWarp Scaffoldingの配置先 -->
+
         <div id="project"></div>
 
     </div>
 
 
     <!-- =========================================================
-         ダウンロード
+         SB3ダウンロード
     ========================================================== -->
 
     <div id="downloadArea">
 
         <button
             id="downloadButton"
+            type="button"
             disabled
         >
             SB3をダウンロード
@@ -462,37 +558,59 @@
 
 
     <script>
+
         /* =========================================================
            DOM
         ========================================================= */
 
         const projectIdInput =
-            document.getElementById("projectIdInput");
+            document.getElementById(
+                "projectIdInput"
+            );
 
         const loadButton =
-            document.getElementById("loadButton");
+            document.getElementById(
+                "loadButton"
+            );
 
         const stopButton =
-            document.getElementById("stopButton");
+            document.getElementById(
+                "stopButton"
+            );
 
         const downloadButton =
-            document.getElementById("downloadButton");
+            document.getElementById(
+                "downloadButton"
+            );
 
         const maximizeButton =
-            document.getElementById("maximizeButton");
+            document.getElementById(
+                "maximizeButton"
+            );
 
         const statusElement =
-            document.getElementById("status");
+            document.getElementById(
+                "status"
+            );
 
         const projectInfoElement =
-            document.getElementById("projectInfo");
+            document.getElementById(
+                "projectInfo"
+            );
 
         const projectElement =
-            document.getElementById("project");
+            document.getElementById(
+                "project"
+            );
+
+        const stageToolbar =
+            document.getElementById(
+                "stageToolbar"
+            );
 
 
         /* =========================================================
-           グローバル
+           状態
         ========================================================= */
 
         let scaffolding = null;
@@ -507,11 +625,13 @@
 
 
         /* =========================================================
-           ステータス表示
+           ステータス
         ========================================================= */
 
         function setStatus(text) {
-            statusElement.textContent = text;
+
+            statusElement.textContent =
+                text;
         }
 
 
@@ -521,9 +641,14 @@
 
         function initializeScaffolding() {
 
+            /*
+             * 既に初期化済みなら何もしない
+             */
+
             if (scaffolding !== null) {
                 return;
             }
+
 
             try {
 
@@ -534,57 +659,73 @@
                 /*
                  * Scratch標準サイズ
                  */
-                scaffolding.width = 480;
-                scaffolding.height = 360;
+
+                scaffolding.width =
+                    480;
+
+                scaffolding.height =
+                    360;
 
 
                 /*
-                 * アスペクト比4:3を維持
+                 * 4:3維持
                  */
+
                 scaffolding.resizeMode =
                     "preserve-ratio";
 
 
                 /*
-                 * リスト編集を無効化
+                 * リスト編集無効
                  */
-                scaffolding.editableLists = false;
+
+                scaffolding.editableLists =
+                    false;
 
 
                 /*
-                 * キーボード・マウス等の入力
+                 * マウス・キーボード等
                  */
-                scaffolding.shouldConnectPeripherals = true;
+
+                scaffolding.shouldConnectPeripherals =
+                    true;
 
 
                 /*
-                 * Packaged Runtimeは使用しない
+                 * Packaged Runtimeを使用しない
                  */
-                scaffolding.usePackagedRuntime = false;
+
+                scaffolding.usePackagedRuntime =
+                    false;
 
 
                 /*
                  * 初期化
                  */
+
                 scaffolding.setup();
 
 
                 /*
-                 * Scaffoldingをprojectへ追加
+                 * #projectへ追加
                  */
-                scaffolding.appendTo(projectElement);
+
+                scaffolding.appendTo(
+                    projectElement
+                );
 
 
                 /*
-                 * Scratchのアセット取得先を登録。
+                 * Scratchアセット取得先
                  *
-                 * Scaffoldingのバージョンによって
-                 * storageが存在しない場合があるため
-                 * 条件付きにする。
+                 * storageが存在する場合のみ設定
                  */
+
                 if (
                     scaffolding.storage &&
-                    typeof scaffolding.storage.addWebStore === "function"
+                    typeof
+                        scaffolding.storage.addWebStore
+                        === "function"
                 ) {
 
                     const storage =
@@ -592,6 +733,7 @@
 
 
                     storage.addWebStore(
+
                         [
                             storage.AssetType.ImageVector,
                             storage.AssetType.ImageBitmap,
@@ -599,6 +741,7 @@
                         ],
 
                         asset => {
+
                             return (
                                 "https://assets.scratch.mit.edu/internalapi/asset/" +
                                 asset.assetId +
@@ -612,8 +755,9 @@
 
 
                 /*
-                 * 通常サイズにする
+                 * 通常サイズ
                  */
+
                 setNormalStageSize();
 
 
@@ -634,10 +778,14 @@
 
 
         /* =========================================================
-           通常時のステージサイズ
+           通常時ステージサイズ
         ========================================================= */
 
         function setNormalStageSize() {
+
+            /*
+             * ステージ本体
+             */
 
             projectElement.style.setProperty(
                 "width",
@@ -653,27 +801,30 @@
 
 
             /*
-             * ツールバーも480px
+             * ツールバー
              */
-            const toolbar =
-                document.getElementById("stageToolbar");
 
-            if (toolbar) {
+            stageToolbar.style.setProperty(
+                "width",
+                "480px",
+                "important"
+            );
 
-                toolbar.style.setProperty(
-                    "width",
-                    "480px",
-                    "important"
-                );
-            }
+            stageToolbar.style.setProperty(
+                "height",
+                "46px",
+                "important"
+            );
 
 
             /*
-             * Scaffoldingへレイアウト変更を通知
+             * Scaffoldingにレイアウト変更を通知
              */
+
             if (
                 scaffolding &&
-                typeof scaffolding.relayout === "function"
+                typeof scaffolding.relayout ===
+                    "function"
             ) {
 
                 requestAnimationFrame(() => {
@@ -686,14 +837,14 @@
 
 
         /* =========================================================
-           最大化時のステージサイズ
+           最大化時サイズ計算
         ========================================================= */
 
         function setMaximizedStageSize() {
 
-            const toolbar =
-                document.getElementById("stageToolbar");
-
+            /*
+             * 画面サイズ
+             */
 
             const viewportWidth =
                 window.innerWidth;
@@ -705,60 +856,74 @@
             /*
              * ツールバー高さ
              *
-             * 実際の高さを取得する。
+             * 実際のDOMサイズを取得
              */
-            let toolbarHeight = 52;
 
-            if (toolbar) {
+            let toolbarHeight = 46;
+
+
+            if (stageToolbar) {
 
                 const rect =
-                    toolbar.getBoundingClientRect();
+                    stageToolbar.getBoundingClientRect();
+
 
                 if (rect.height > 0) {
-                    toolbarHeight = rect.height;
+
+                    toolbarHeight =
+                        rect.height;
                 }
             }
 
 
             /*
-             * ステージに使用できる高さ
+             * ステージに使える高さ
              */
+
             const availableHeight =
                 Math.max(
                     1,
-                    viewportHeight - toolbarHeight
+                    viewportHeight -
+                    toolbarHeight
                 );
 
 
             /*
-             * Scratchは4:3
-             *
-             * width = height * 4 / 3
+             * Scratchステージは4:3
              */
+
             let width =
-                availableHeight * 4 / 3;
+                availableHeight *
+                4 / 3;
 
             let height =
                 availableHeight;
 
 
             /*
-             * 横幅が画面からはみ出す場合、
-             * 横幅を基準に再計算。
+             * 横幅が画面を超える場合
+             *
+             * 横幅を基準に再計算
              */
-            if (width > viewportWidth) {
+
+            if (
+                width >
+                viewportWidth
+            ) {
 
                 width =
                     viewportWidth;
 
                 height =
-                    width * 3 / 4;
+                    width *
+                    3 / 4;
             }
 
 
             /*
-             * 整数pxにする
+             * 整数px
              */
+
             width =
                 Math.floor(width);
 
@@ -767,8 +932,9 @@
 
 
             /*
-             * #project
+             * ステージ本体へ直接指定
              */
+
             projectElement.style.setProperty(
                 "width",
                 `${width}px`,
@@ -785,28 +951,22 @@
             /*
              * ツールバーもステージと同じ幅
              */
-            if (toolbar) {
 
-                toolbar.style.setProperty(
-                    "width",
-                    `${width}px`,
-                    "important"
-                );
-            }
-
-
-            console.log(
-                "最大化ステージ:",
-                `${width} x ${height}`
+            stageToolbar.style.setProperty(
+                "width",
+                `${width}px`,
+                "important"
             );
 
 
             /*
-             * Scaffoldingにサイズ変更を通知
+             * Scaffoldingへ通知
              */
+
             if (
                 scaffolding &&
-                typeof scaffolding.relayout === "function"
+                typeof scaffolding.relayout ===
+                    "function"
             ) {
 
                 requestAnimationFrame(() => {
@@ -815,11 +975,19 @@
 
                 });
             }
+
+
+            console.log(
+                "最大化ステージ:",
+                width,
+                "x",
+                height
+            );
         }
 
 
         /* =========================================================
-           ステージサイズ更新
+           現在の状態に合わせてサイズ変更
         ========================================================= */
 
         function updateStageSize() {
@@ -855,8 +1023,9 @@
             if (isMaximized) {
 
                 /*
-                 * 最大化アイコン
+                 * 最大化解除アイコン
                  */
+
                 maximizeButton.textContent =
                     "⤢";
 
@@ -865,9 +1034,14 @@
 
 
                 /*
-                 * CSSレイアウトが
-                 * 確定してからサイズ計算
+                 * CSSレイアウトが確定してから
+                 * ステージサイズを計算する。
+                 *
+                 * 2回requestAnimationFrameを
+                 * 入れているのは、fullscreen相当の
+                 * レイアウト変更を確実に反映させるため。
                  */
+
                 requestAnimationFrame(() => {
 
                     requestAnimationFrame(() => {
@@ -881,8 +1055,9 @@
             } else {
 
                 /*
-                 * 通常アイコン
+                 * 通常状態
                  */
+
                 maximizeButton.textContent =
                     "⤡";
 
@@ -890,20 +1065,28 @@
                     "最大化";
 
 
+                /*
+                 * 480×360へ戻す
+                 */
+
                 setNormalStageSize();
             }
         }
 
 
         /* =========================================================
-           メタデータ取得
+           TurboWarp APIからメタデータ取得
         ========================================================= */
 
-        async function getProjectMetadata(projectId) {
+        async function getProjectMetadata(
+            projectId
+        ) {
 
             const url =
                 "https://trampoline.turbowarp.org/api/projects/" +
-                encodeURIComponent(projectId);
+                encodeURIComponent(
+                    projectId
+                );
 
 
             const response =
@@ -913,9 +1096,9 @@
             if (!response.ok) {
 
                 throw new Error(
-                    "プロジェクト情報の取得に失敗しました。"
-                    + " HTTP "
-                    + response.status
+                    "プロジェクト情報の取得に失敗しました。" +
+                    " HTTP " +
+                    response.status
                 );
             }
 
@@ -935,9 +1118,13 @@
 
             const url =
                 "https://projects.scratch.mit.edu/" +
-                encodeURIComponent(projectId) +
+                encodeURIComponent(
+                    projectId
+                ) +
                 "?token=" +
-                encodeURIComponent(projectToken);
+                encodeURIComponent(
+                    projectToken
+                );
 
 
             const response =
@@ -947,9 +1134,9 @@
             if (!response.ok) {
 
                 throw new Error(
-                    "SB3の取得に失敗しました。"
-                    + " HTTP "
-                    + response.status
+                    "SB3の取得に失敗しました。" +
+                    " HTTP " +
+                    response.status
                 );
             }
 
@@ -959,14 +1146,47 @@
 
 
         /* =========================================================
+           HTMLエスケープ
+        ========================================================= */
+
+        function escapeHtml(value) {
+
+            return String(value)
+                .replaceAll(
+                    "&",
+                    "&amp;"
+                )
+                .replaceAll(
+                    "<",
+                    "&lt;"
+                )
+                .replaceAll(
+                    ">",
+                    "&gt;"
+                )
+                .replaceAll(
+                    '"',
+                    "&quot;"
+                )
+                .replaceAll(
+                    "'",
+                    "&#039;"
+                );
+        }
+
+
+        /* =========================================================
            プロジェクト情報表示
         ========================================================= */
 
-        function displayProjectInfo(metadata) {
+        function displayProjectInfo(
+            metadata
+        ) {
 
             const title =
                 metadata.title ||
                 "無題";
+
 
             const author =
                 metadata.author?.username ??
@@ -988,69 +1208,68 @@
 
 
         /* =========================================================
-           HTMLエスケープ
-        ========================================================= */
-
-        function escapeHtml(value) {
-
-            return String(value)
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
-        }
-
-
-        /* =========================================================
            SB3ダウンロード
         ========================================================= */
 
-        function setupSb3Download() {
+        function downloadSb3() {
 
-            downloadButton.onclick = () => {
-
-                if (!currentSb3Buffer) {
-                    return;
-                }
+            if (!currentSb3Buffer) {
+                return;
+            }
 
 
-                const blob =
-                    new Blob(
-                        [currentSb3Buffer],
-                        {
-                            type:
-                                "application/zip"
-                        }
-                    );
+            const blob =
+                new Blob(
+                    [currentSb3Buffer],
+                    {
+                        type:
+                            "application/zip"
+                    }
+                );
 
 
-                const url =
-                    URL.createObjectURL(blob);
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
 
 
-                const link =
-                    document.createElement("a");
+            const link =
+                document.createElement(
+                    "a"
+                );
 
 
-                link.href = url;
+            link.href =
+                url;
 
 
-                link.download =
-                    `${currentProjectId}.sb3`;
+            link.download =
+                `${currentProjectId}.sb3`;
 
 
-                document.body.appendChild(link);
+            document.body.appendChild(
+                link
+            );
 
 
-                link.click();
+            link.click();
 
 
-                link.remove();
+            link.remove();
 
 
-                URL.revokeObjectURL(url);
-            };
+            /*
+             * 少し遅らせてURLを解放
+             */
+
+            setTimeout(() => {
+
+                URL.revokeObjectURL(
+                    url
+                );
+
+            }, 1000);
         }
 
 
@@ -1075,13 +1294,17 @@
 
 
             /*
-             * 読み込み中はボタン無効化
+             * UI無効化
              */
-            loadButton.disabled = true;
 
-            stopButton.disabled = true;
+            loadButton.disabled =
+                true;
 
-            downloadButton.disabled = true;
+            stopButton.disabled =
+                true;
+
+            downloadButton.disabled =
+                true;
 
 
             projectInfoElement.style.display =
@@ -1098,12 +1321,14 @@
                 /*
                  * Scaffolding初期化
                  */
+
                 initializeScaffolding();
 
 
                 /*
                  * メタデータ取得
                  */
+
                 const metadata =
                     await getProjectMetadata(
                         projectId
@@ -1115,15 +1340,22 @@
 
 
                 /*
-                 * project_token確認
+                 * token確認
                  */
-                if (!metadata.project_token) {
+
+                if (
+                    !metadata.project_token
+                ) {
 
                     throw new Error(
                         "project_tokenが取得できませんでした。"
                     );
                 }
 
+
+                /*
+                 * 情報表示
+                 */
 
                 displayProjectInfo(
                     metadata
@@ -1138,6 +1370,7 @@
                 /*
                  * SB3取得
                  */
+
                 const sb3Buffer =
                     await getProjectData(
                         projectId,
@@ -1158,27 +1391,26 @@
 
 
                 /*
-                 * プロジェクト読み込み
+                 * SB3をScaffoldingへ渡す
                  */
+
                 await scaffolding.loadProject(
                     sb3Buffer
                 );
 
 
                 /*
-                 * ステージサイズを再設定
-                 *
-                 * loadProjectによって
-                 * Scaffolding側のレイアウトが
-                 * 更新される可能性があるため。
+                 * loadProject後に
+                 * 現在のステージサイズを再設定
                  */
+
                 updateStageSize();
 
 
                 /*
-                 * 少し待ってからもう一度
-                 * relayout
+                 * レイアウトをもう一度確定
                  */
+
                 requestAnimationFrame(() => {
 
                     if (
@@ -1197,6 +1429,7 @@
                 /*
                  * 緑の旗
                  */
+
                 scaffolding.greenFlag();
 
 
@@ -1218,7 +1451,9 @@
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    error
+                );
 
 
                 setStatus(
@@ -1236,7 +1471,6 @@
 
                 downloadButton.disabled =
                     true;
-
 
             } finally {
 
@@ -1260,10 +1494,10 @@
 
                 scaffolding.stopAll();
 
+
                 setStatus(
                     "プロジェクトを停止しました。"
                 );
-
             }
         }
 
@@ -1272,11 +1506,19 @@
            イベント
         ========================================================= */
 
+        /*
+         * 読み込み
+         */
+
         loadButton.addEventListener(
             "click",
             loadProject
         );
 
+
+        /*
+         * 停止
+         */
 
         stopButton.addEventListener(
             "click",
@@ -1284,42 +1526,48 @@
         );
 
 
+        /*
+         * 最大化
+         */
+
         maximizeButton.addEventListener(
             "click",
             toggleMaximize
         );
 
 
+        /*
+         * SB3ダウンロード
+         */
+
         downloadButton.addEventListener(
             "click",
-            () => {
-
-                /*
-                 * setupSb3Download()側で処理
-                 */
-            }
+            downloadSb3
         );
 
 
         /*
-         * Enterキーでも読み込み
+         * Enterで読み込み
          */
+
         projectIdInput.addEventListener(
             "keydown",
             event => {
 
-                if (event.key === "Enter") {
+                if (
+                    event.key === "Enter"
+                ) {
 
                     loadProject();
-
                 }
             }
         );
 
 
         /*
-         * ブラウザサイズ変更時
+         * ウィンドウサイズ変更
          */
+
         window.addEventListener(
             "resize",
             () => {
@@ -1331,7 +1579,6 @@
                 ) {
 
                     setMaximizedStageSize();
-
                 }
 
             }
@@ -1339,8 +1586,9 @@
 
 
         /*
-         * Escキーで最大化解除
+         * Escで最大化解除
          */
+
         document.addEventListener(
             "keydown",
             event => {
@@ -1353,7 +1601,6 @@
                 ) {
 
                     toggleMaximize();
-
                 }
 
             }
@@ -1361,15 +1608,9 @@
 
 
         /* =========================================================
-           初期設定
+           初期状態
         ========================================================= */
 
-        setupSb3Download();
-
-
-        /*
-         * 初期ステージサイズ
-         */
         setNormalStageSize();
 
     </script>
