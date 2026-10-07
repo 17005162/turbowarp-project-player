@@ -6,6 +6,7 @@
 
 <title>TurboWarp Project Player</title>
 
+<!-- TurboWarp Scaffolding -->
 <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
 
 <style>
@@ -228,10 +229,9 @@ body {
 
 
 /*
- * Scaffolding自身のroot
+ * Scaffoldingのルート
  *
- * Scaffoldingはrootを100%にして使用するため、
- * 親(#project)のサイズを基準にする。
+ * 親要素 #project と同じサイズにする。
  */
 #project > .sc-root {
     width: 100% !important;
@@ -285,6 +285,9 @@ body {
    緑の旗
    ========================================================= */
 
+/*
+ * 実行中だけ薄灰色の膜を付ける。
+ */
 #startButton.running {
     background: rgba(205, 205, 205, 0.70);
 }
@@ -332,7 +335,7 @@ body {
 
 
 /* =========================================================
-   一時停止
+   一時停止アイコン
    ========================================================= */
 
 .pause-icon {
@@ -361,7 +364,7 @@ body {
 
 
 /* =========================================================
-   再生
+   再生アイコン
    ========================================================= */
 
 .play-icon {
@@ -378,7 +381,7 @@ body {
 
 
 /* =========================================================
-   停止
+   停止アイコン
    ========================================================= */
 
 .stop-icon {
@@ -394,7 +397,7 @@ body {
 
 
 /* =========================================================
-   最大化
+   最大化ボタン
    ========================================================= */
 
 #maximizeButton {
@@ -456,7 +459,7 @@ body {
 
 
 /* =========================================================
-   最大化状態
+   最大化
    ========================================================= */
 
 #playerArea.maximized {
@@ -468,7 +471,6 @@ body {
     transform: translate(-50%, -50%);
 
     margin: 0;
-
     padding: 0;
 
     width: auto;
@@ -481,32 +483,18 @@ body {
     align-items: center;
     justify-content: center;
 
-    background: transparent;
+    /*
+     * 最大化時の背景も白
+     */
+    background: white;
 
     z-index: 10000;
 }
 
 
 /*
- * 最大化時のツールバー
+ * 最大化時の画面全体の背景
  */
-#playerArea.maximized #stageToolbar {
-    flex: none;
-}
-
-
-/*
- * 最大化時のproject
- */
-#playerArea.maximized #project {
-    flex: none;
-}
-
-
-/* =========================================================
-   最大化時の背景
-   ========================================================= */
-
 #playerArea.maximized::before {
     content: "";
 
@@ -520,9 +508,26 @@ body {
 
     transform: translate(-50%, -50%);
 
-    background: #111;
+    background: white;
 
     z-index: -1;
+}
+
+
+/*
+ * 最大化時もツールバーは
+ * ステージと同じ幅
+ */
+#playerArea.maximized #stageToolbar {
+    flex: none;
+}
+
+
+/*
+ * 最大化時のステージ
+ */
+#playerArea.maximized #project {
+    flex: none;
 }
 
 
@@ -568,7 +573,7 @@ body {
 
 
     <!-- =====================================================
-         入力
+         プロジェクトID入力
          ===================================================== -->
 
     <div id="inputArea">
@@ -613,11 +618,14 @@ body {
     <div id="playerArea">
 
 
-        <!-- ツールバー -->
+        <!-- =================================================
+             ツールバー
+             ================================================= -->
 
         <div id="stageToolbar">
 
             <div id="stageControls">
+
 
                 <!-- スタート -->
 
@@ -668,7 +676,7 @@ body {
 
 
         <!-- =================================================
-             Scaffolding
+             TurboWarp Scaffolding
              ================================================= -->
 
         <div id="project"></div>
@@ -677,7 +685,7 @@ body {
 
 
     <!-- =====================================================
-         ダウンロード
+         SB3ダウンロード
          ===================================================== -->
 
     <div id="downloadArea">
@@ -694,7 +702,7 @@ body {
 <script>
 
 /* =========================================================
-   グローバル
+   グローバル変数
    ========================================================= */
 
 let scaffolding = null;
@@ -781,6 +789,7 @@ function initializeScaffolding() {
         return;
     }
 
+
     try {
 
         scaffolding =
@@ -788,7 +797,7 @@ function initializeScaffolding() {
 
 
         /*
-         * Scratchの標準ステージサイズ
+         * Scratch標準サイズ
          */
         scaffolding.width = 480;
 
@@ -796,13 +805,8 @@ function initializeScaffolding() {
 
 
         /*
-         * ここをstretchにする。
-         *
-         * projectElementとScaffoldingの
-         * 表示領域を完全に一致させる。
-         *
-         * 最大化時も4:3を維持するので、
-         * 実際には縦横比は変わらない。
+         * 親要素とScaffoldingの
+         * 表示領域を一致させる。
          */
         scaffolding.resizeMode =
             "stretch";
@@ -819,7 +823,7 @@ function initializeScaffolding() {
 
 
         /*
-         * VM初期化
+         * 初期化
          */
         scaffolding.setup();
 
@@ -859,7 +863,7 @@ function initializeScaffolding() {
 
 
         /*
-         * Scaffoldingをprojectに追加
+         * Scaffoldingを追加
          */
         scaffolding.appendTo(
             projectElement
@@ -867,8 +871,7 @@ function initializeScaffolding() {
 
 
         /*
-         * DOMのレイアウトが確定してから
-         * relayoutする。
+         * DOM確定後にレイアウト
          */
         requestAnimationFrame(
             () => {
@@ -884,11 +887,16 @@ function initializeScaffolding() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Scaffolding initialization error:",
+            error
+        );
+
 
         setStatus(
             "TurboWarp Playerの初期化に失敗しました。"
         );
+
 
         throw error;
     }
@@ -896,7 +904,7 @@ function initializeScaffolding() {
 
 
 /* =========================================================
-   ボタン状態
+   ボタン状態更新
    ========================================================= */
 
 function updateControlButtons() {
@@ -908,11 +916,17 @@ function updateControlButtons() {
         projectState === "running"
     ) {
 
+        /*
+         * 緑旗の後ろに薄灰色
+         */
         startButton.classList.add(
             "running"
         );
 
 
+        /*
+         * 一時停止アイコン
+         */
         pauseButton.innerHTML =
             `<span class="pause-icon"></span>`;
 
@@ -927,7 +941,7 @@ function updateControlButtons() {
 
 
     /*
-     * 一時停止
+     * 一時停止中
      */
     else if (
         projectState === "paused"
@@ -938,6 +952,9 @@ function updateControlButtons() {
         );
 
 
+        /*
+         * 再生アイコン
+         */
         pauseButton.innerHTML =
             `<span class="play-icon"></span>`;
 
@@ -952,7 +969,7 @@ function updateControlButtons() {
 
 
     /*
-     * 停止
+     * 停止中
      */
     else {
 
@@ -995,6 +1012,12 @@ function pauseProject() {
     }
 
 
+    /*
+     * 実行ループだけを停止する。
+     *
+     * これによりプロジェクトの
+     * 変数や位置などをリセットしない。
+     */
     if (
         runtime.frameLoop &&
         runtime.frameLoop.running
@@ -1026,6 +1049,9 @@ function resumeProject() {
     }
 
 
+    /*
+     * 停止していた実行ループを再開
+     */
     if (
         runtime.frameLoop &&
         !runtime.frameLoop.running
@@ -1075,9 +1101,9 @@ async function loadProject(projectId) {
 
     try {
 
-        /* ---------------------------------------------
-           メタデータ
-           --------------------------------------------- */
+        /* =============================================
+           1. メタデータ取得
+           ============================================= */
 
         setStatus(
             "プロジェクト情報を取得しています..."
@@ -1105,18 +1131,14 @@ async function loadProject(projectId) {
             await metadataResponse.json();
 
 
-        /* ---------------------------------------------
-           タイトル
-           --------------------------------------------- */
+        /* =============================================
+           2. プロジェクト情報
+           ============================================= */
 
         const title =
             metadata.title ||
             "無題のプロジェクト";
 
-
-        /* ---------------------------------------------
-           作者
-           --------------------------------------------- */
 
         const author =
             metadata.author?.username ??
@@ -1136,9 +1158,9 @@ async function loadProject(projectId) {
             "block";
 
 
-        /* ---------------------------------------------
-           token
-           --------------------------------------------- */
+        /* =============================================
+           3. project_token
+           ============================================= */
 
         const projectToken =
             metadata.project_token;
@@ -1152,9 +1174,9 @@ async function loadProject(projectId) {
         }
 
 
-        /* ---------------------------------------------
-           SB3
-           --------------------------------------------- */
+        /* =============================================
+           4. SB3取得
+           ============================================= */
 
         setStatus(
             "プロジェクトデータを取得しています..."
@@ -1201,9 +1223,9 @@ async function loadProject(projectId) {
             sb3Buffer;
 
 
-        /* ---------------------------------------------
-           Scaffolding
-           --------------------------------------------- */
+        /* =============================================
+           5. Scaffoldingへ読み込み
+           ============================================= */
 
         setStatus(
             "TurboWarp Playerに読み込んでいます..."
@@ -1215,9 +1237,9 @@ async function loadProject(projectId) {
         );
 
 
-        /* ---------------------------------------------
-           読み込み完了
-           --------------------------------------------- */
+        /* =============================================
+           6. 初期状態
+           ============================================= */
 
         projectLoaded =
             true;
@@ -1228,8 +1250,7 @@ async function loadProject(projectId) {
 
 
         /*
-         * 非同期で読み込まれたDOMも考慮して
-         * 2回レイアウトする。
+         * レイアウト更新
          */
         scaffolding.relayout();
 
@@ -1246,6 +1267,10 @@ async function loadProject(projectId) {
         updateControlButtons();
 
 
+        /* =============================================
+           7. ダウンロード表示
+           ============================================= */
+
         downloadArea.style.display =
             "block";
 
@@ -1257,7 +1282,9 @@ async function loadProject(projectId) {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         projectLoaded =
@@ -1281,7 +1308,6 @@ async function loadProject(projectId) {
 
         loadButton.disabled =
             false;
-
     }
 }
 
@@ -1316,7 +1342,7 @@ loadButton.addEventListener(
 
 
 /* =========================================================
-   Enter
+   Enterキー
    ========================================================= */
 
 projectIdInput.addEventListener(
@@ -1369,6 +1395,7 @@ startButton.addEventListener(
 
             updateControlButtons();
 
+
             return;
         }
 
@@ -1390,6 +1417,7 @@ startButton.addEventListener(
 
 
             updateControlButtons();
+
 
             return;
         }
@@ -1431,6 +1459,7 @@ pauseButton.addEventListener(
 
             updateControlButtons();
 
+
             return;
         }
 
@@ -1452,6 +1481,7 @@ pauseButton.addEventListener(
 
 
             updateControlButtons();
+
 
             return;
         }
@@ -1475,6 +1505,10 @@ stopButton.addEventListener(
         }
 
 
+        /*
+         * 実行中でも
+         * 一時停止中でも停止可能
+         */
         scaffolding.stopAll();
 
 
@@ -1494,10 +1528,7 @@ stopButton.addEventListener(
 function calculateMaxStageSize() {
 
     /*
-     * 現在のブラウザ表示領域。
-     *
-     * clientWidth / clientHeightを使用する。
-     * innerWidthだけに依存しない。
+     * ブラウザの表示領域
      */
     const viewportWidth =
         document.documentElement.clientWidth;
@@ -1507,14 +1538,14 @@ function calculateMaxStageSize() {
 
 
     /*
-     * ツールバー
+     * ツールバー高さ
      */
     const toolbarHeight =
         40;
 
 
     /*
-     * ステージに使用できる高さ
+     * ステージに使用可能な高さ
      */
     const availableHeight =
         Math.max(
@@ -1525,7 +1556,7 @@ function calculateMaxStageSize() {
 
 
     /*
-     * 4:3の最大サイズ
+     * まず幅いっぱいにする
      */
     let width =
         viewportWidth;
@@ -1535,8 +1566,8 @@ function calculateMaxStageSize() {
 
 
     /*
-     * 高さに収まらなければ
-     * 高さ基準にする。
+     * 高さが入りきらない場合は
+     * 高さ基準にする
      */
     if (
         height >
@@ -1575,12 +1606,16 @@ function calculateMaxStageSize() {
 function applyStageLayout() {
 
     /*
-     * 通常
+     * ================================================
+     * 通常状態
+     * ================================================
      */
+
     if (!isMaximized) {
 
         playerArea.style.width =
             "480px";
+
 
         playerArea.style.height =
             "400px";
@@ -1593,6 +1628,7 @@ function applyStageLayout() {
         projectElement.style.width =
             "480px";
 
+
         projectElement.style.height =
             "360px";
 
@@ -1603,14 +1639,20 @@ function applyStageLayout() {
 
 
     /*
-     * 最大化
+     * ================================================
+     * 最大化状態
+     * ================================================
      */
+
     else {
 
         const size =
             calculateMaxStageSize();
 
 
+        /*
+         * プレイヤー全体
+         */
         playerArea.style.width =
             size.width + "px";
 
@@ -1619,10 +1661,16 @@ function applyStageLayout() {
             (size.height + 40) + "px";
 
 
+        /*
+         * ツールバー
+         */
         stageToolbar.style.width =
             size.width + "px";
 
 
+        /*
+         * ステージ
+         */
         projectElement.style.width =
             size.width + "px";
 
@@ -1637,8 +1685,10 @@ function applyStageLayout() {
 
 
     /*
-     * Scaffoldingのサイズ計算を
-     * DOM更新後に実行。
+     * Scaffoldingに新しいサイズを
+     * 伝える。
+     *
+     * CSS反映後に実行することが重要。
      */
     if (
         scaffolding &&
@@ -1652,12 +1702,8 @@ function applyStageLayout() {
 
 
                 /*
-                 * 念のためもう一度、
-                 * 次のフレームでも実行。
-                 *
-                 * 最大化・通常化直後の
-                 * CSS反映タイミングによる
-                 * マウス座標ずれを防ぐ。
+                 * さらに1フレーム後にも
+                 * 再計算する。
                  */
                 requestAnimationFrame(
                     () => {
@@ -1673,7 +1719,7 @@ function applyStageLayout() {
 
 
 /* =========================================================
-   最大化
+   最大化ボタン
    ========================================================= */
 
 maximizeButton.addEventListener(
@@ -1727,9 +1773,7 @@ window.addEventListener(
     "resize",
     () => {
 
-        if (
-            isMaximized
-        ) {
+        if (isMaximized) {
 
             applyStageLayout();
         }
@@ -1809,7 +1853,7 @@ downloadButton.addEventListener(
 
 
 /* =========================================================
-   初期化
+   初期状態
    ========================================================= */
 
 projectState =
