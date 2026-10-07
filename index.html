@@ -12,30 +12,48 @@
     <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
 
+
+        html,
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            width: 100%;
+            min-height: 100%;
+        }
+
+
+        body {
             background: #f5f5f5;
             font-family: sans-serif;
+            padding: 20px;
         }
+
 
         h1 {
             margin-top: 0;
         }
 
+
+        /* =========================================
+           操作エリア
+           ========================================= */
+
         .input-area {
             margin-bottom: 15px;
         }
+
 
         #projectId {
             width: 300px;
             padding: 8px;
             font-size: 16px;
         }
+
 
         button {
             padding: 8px 14px;
@@ -44,10 +62,30 @@
             cursor: pointer;
         }
 
+
+        /* =========================================
+           ステータス
+           ========================================= */
+
         #status {
             margin: 10px 0;
             min-height: 24px;
         }
+
+
+        .error {
+            color: #d00000;
+        }
+
+
+        .success {
+            color: #008000;
+        }
+
+
+        /* =========================================
+           プロジェクト情報
+           ========================================= */
 
         #projectInfo {
             margin: 10px 0;
@@ -56,36 +94,169 @@
             border-radius: 5px;
         }
 
+
+        /* =========================================
+           ステージの外側
+           
+           通常時：
+           480 × 360 を中央に表示
+           ========================================= */
+
+        #stageArea {
+            width: 100%;
+            height: 360px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            margin-top: 15px;
+        }
+
+
+        /*
+         * Scaffoldingを入れる場所
+         *
+         * Scaffoldingはこの要素の
+         * width / height に合わせて表示される。
+         */
+
         #project {
             width: 480px;
             height: 360px;
-            background: #000;
-            margin-top: 15px;
+
+            background: black;
+
+            flex-shrink: 0;
         }
+
+
+        /* =========================================
+           通常表示モード
+           ========================================= */
+
+        body.normal-mode {
+            overflow: auto;
+        }
+
+
+        /* =========================================
+           最大化モード
+           
+           画面全体をステージ領域にする。
+           ただし4:3を維持する。
+           ========================================= */
+
+        body.maximized-mode {
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+
+        body.maximized-mode #stageArea {
+
+            position: fixed;
+
+            left: 0;
+            top: 0;
+
+            width: 100vw;
+            height: 100vh;
+
+            margin: 0;
+
+            display: flex;
+
+            justify-content: center;
+            align-items: center;
+
+            background: black;
+
+            z-index: 9999;
+        }
+
+
+        /*
+         * 最大化時のproject。
+         *
+         * width/heightを100%にすることで、
+         * Scaffoldingのpreserve-ratioが
+         * 画面内に4:3で収めてくれる。
+         */
+
+        body.maximized-mode #project {
+
+            width: 100%;
+            height: 100%;
+
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+
+        /* =========================================
+           最大化時の操作ボタン
+           
+           ステージの上に表示
+           ========================================= */
+
+        #stageControls {
+
+            position: fixed;
+
+            top: 10px;
+            right: 10px;
+
+            z-index: 10000;
+
+            display: flex;
+
+            gap: 5px;
+        }
+
+
+        #stageControls button {
+
+            margin-left: 0;
+
+            background: rgba(255, 255, 255, 0.9);
+
+            border: 1px solid #aaa;
+
+            border-radius: 4px;
+        }
+
+
+        /* =========================================
+           ダウンロード
+           ========================================= */
 
         #downloadArea {
             margin-top: 15px;
         }
 
+
         #downloadSb3 {
             display: none;
         }
 
-        .error {
-            color: #d00;
-        }
-
-        .success {
-            color: #080;
-        }
     </style>
 </head>
 
-<body>
+
+<body class="normal-mode">
+
 
 <h1>TurboWarp Project Player</h1>
 
+
+<!-- =========================================
+     プロジェクト入力
+     ========================================= -->
+
 <div class="input-area">
+
     <input
         id="projectId"
         type="text"
@@ -99,31 +270,78 @@
     <button id="stopButton">
         停止
     </button>
+
+    <button id="normalButton">
+        中央表示
+    </button>
+
+    <button id="maximizeButton">
+        最大化
+    </button>
+
 </div>
+
+
+<!-- =========================================
+     ステータス
+     ========================================= -->
 
 <div id="status">
     Project IDを入力してください。
 </div>
 
+
+<!-- =========================================
+     プロジェクト情報
+     ========================================= -->
+
 <div id="projectInfo"></div>
 
-<div id="project"></div>
 
-<div id="downloadArea">
-    <a id="downloadSb3" download>
-        <button>SB3をダウンロード</button>
-    </a>
+<!-- =========================================
+     ステージ
+     ========================================= -->
+
+<div id="stageArea">
+
+    <div id="project"></div>
+
 </div>
 
 
+<!-- =========================================
+     ダウンロード
+     ========================================= -->
+
+<div id="downloadArea">
+
+    <a
+        id="downloadSb3"
+        download
+    >
+        <button>
+            SB3をダウンロード
+        </button>
+    </a>
+
+</div>
+
+
+<!-- =========================================
+     JavaScript
+     ========================================= -->
+
 <script>
+
 
 /* =========================================================
    グローバル変数
    ========================================================= */
 
 let scaffolding = null;
+
 let currentSb3 = null;
+
 let currentProjectId = null;
 
 
@@ -134,20 +352,38 @@ let currentProjectId = null;
 const projectIdInput =
     document.getElementById("projectId");
 
+
 const loadButton =
     document.getElementById("loadButton");
+
 
 const stopButton =
     document.getElementById("stopButton");
 
+
+const normalButton =
+    document.getElementById("normalButton");
+
+
+const maximizeButton =
+    document.getElementById("maximizeButton");
+
+
 const statusElement =
     document.getElementById("status");
+
 
 const projectInfoElement =
     document.getElementById("projectInfo");
 
+
 const projectElement =
     document.getElementById("project");
+
+
+const stageArea =
+    document.getElementById("stageArea");
+
 
 const downloadSb3 =
     document.getElementById("downloadSb3");
@@ -171,11 +407,13 @@ function setStatus(message, type = "") {
 
 function initializeScaffolding() {
 
-    console.log("Scaffolding初期化開始");
+    console.log(
+        "Scaffolding初期化開始"
+    );
 
 
     /*
-     * Scaffolding本体を作成
+     * Scaffolding作成
      */
 
     scaffolding =
@@ -183,15 +421,30 @@ function initializeScaffolding() {
 
 
     /*
-     * 初期設定
+     * Scratchの論理ステージサイズ
      */
 
     scaffolding.width = 480;
 
     scaffolding.height = 360;
 
+
+    /*
+     * 縦横比を維持
+     *
+     * これが重要。
+     *
+     * 最大化してもScratchの
+     * 480:360 = 4:3を維持する。
+     */
+
     scaffolding.resizeMode =
         "preserve-ratio";
+
+
+    /*
+     * その他設定
+     */
 
     scaffolding.editableLists = false;
 
@@ -201,41 +454,25 @@ function initializeScaffolding() {
 
 
     /*
-     * Scaffoldingを初期化
+     * 初期化
      */
 
     scaffolding.setup();
 
 
     /*
-     * HTMLへ追加
+     * project要素へ追加
      */
 
-    scaffolding.appendTo(projectElement);
-
-
-    /*
-     * デバッグ用
-     */
-
-    console.log(
-        "Scaffolding:",
-        scaffolding
-    );
-
-    console.log(
-        "Storage:",
-        scaffolding.storage
+    scaffolding.appendTo(
+        projectElement
     );
 
 
     /*
-     * Storageが存在する場合のみ
-     * Scratchのアセットサーバーを設定
+     * Storage
      *
-     * v0.2.0では環境によってstorageが
-     * 公開されていない場合があるため、
-     * ここで存在確認する。
+     * v0.2.0環境でstorageが公開されている場合のみ使用
      */
 
     if (
@@ -276,10 +513,17 @@ function initializeScaffolding() {
     } else {
 
         console.warn(
-            "scaffolding.storage が利用できません"
+            "scaffolding.storage は利用できません"
         );
 
     }
+
+
+    /*
+     * 初期レイアウト
+     */
+
+    scaffolding.relayout();
 
 
     console.log(
@@ -289,14 +533,133 @@ function initializeScaffolding() {
 
 
 /* =========================================================
+   通常表示
+   ========================================================= */
+
+function setNormalMode() {
+
+    /*
+     * 最大化解除
+     */
+
+    document.body.classList.remove(
+        "maximized-mode"
+    );
+
+
+    document.body.classList.add(
+        "normal-mode"
+    );
+
+
+    /*
+     * CSS変更後に
+     * Scaffoldingへサイズ変更を通知
+     */
+
+    if (scaffolding) {
+
+        requestAnimationFrame(() => {
+
+            scaffolding.relayout();
+
+        });
+
+    }
+
+
+    console.log(
+        "ステージを中央表示に変更"
+    );
+}
+
+
+/* =========================================================
+   最大化
+   ========================================================= */
+
+function setMaximizedMode() {
+
+    /*
+     * 最大化
+     */
+
+    document.body.classList.remove(
+        "normal-mode"
+    );
+
+
+    document.body.classList.add(
+        "maximized-mode"
+    );
+
+
+    /*
+     * CSSが反映された後に
+     * Scaffoldingのレイアウトを更新
+     *
+     * これをしないとマウス座標が
+     * 以前の480×360位置のままになる
+     * 可能性がある。
+     */
+
+    if (scaffolding) {
+
+        requestAnimationFrame(() => {
+
+            scaffolding.relayout();
+
+        });
+
+    }
+
+
+    console.log(
+        "ステージを最大化"
+    );
+}
+
+
+/* =========================================================
+   ウィンドウサイズ変更
+   ========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        if (!scaffolding) {
+            return;
+        }
+
+
+        /*
+         * ウィンドウサイズ変更後に
+         * Scaffoldingへ通知
+         */
+
+        requestAnimationFrame(() => {
+
+            scaffolding.relayout();
+
+        });
+
+    }
+);
+
+
+/* =========================================================
    プロジェクトメタデータ取得
    ========================================================= */
 
-async function getProjectMetadata(projectId) {
+async function getProjectMetadata(
+    projectId
+) {
 
-    const response = await fetch(
-        `https://trampoline.turbowarp.org/api/projects/${projectId}`
-    );
+    const response =
+        await fetch(
+            `https://trampoline.turbowarp.org/api/projects/${projectId}`
+        );
 
 
     if (response.status === 404) {
@@ -343,9 +706,10 @@ async function getProjectData(
     }
 
 
-    const response = await fetch(
-        `https://projects.scratch.mit.edu/${projectId}?token=${token}`
-    );
+    const response =
+        await fetch(
+            `https://projects.scratch.mit.edu/${projectId}?token=${token}`
+        );
 
 
     if (!response.ok) {
@@ -365,10 +729,13 @@ async function getProjectData(
    プロジェクト情報表示
    ========================================================= */
 
-function displayProjectInfo(metadata) {
+function displayProjectInfo(
+    metadata
+) {
 
     const title =
         metadata.title ?? "不明";
+
 
     const author =
         metadata.author?.username ??
@@ -377,16 +744,22 @@ function displayProjectInfo(metadata) {
 
 
     projectInfoElement.innerHTML = `
+
         <strong>タイトル:</strong>
         ${escapeHtml(title)}
+
         <br>
 
         <strong>作者:</strong>
         ${escapeHtml(author)}
+
         <br>
 
         <strong>ID:</strong>
-        ${escapeHtml(String(metadata.id ?? ""))}
+        ${escapeHtml(
+            String(metadata.id ?? "")
+        )}
+
     `;
 }
 
@@ -400,14 +773,17 @@ function escapeHtml(text) {
     const div =
         document.createElement("div");
 
-    div.textContent = text;
+
+    div.textContent =
+        text;
+
 
     return div.innerHTML;
 }
 
 
 /* =========================================================
-   SB3ダウンロードリンク作成
+   SB3ダウンロード
    ========================================================= */
 
 function setupSb3Download(
@@ -429,10 +805,13 @@ function setupSb3Download(
         URL.createObjectURL(blob);
 
 
-    downloadSb3.href = url;
+    downloadSb3.href =
+        url;
+
 
     downloadSb3.download =
         `${projectId}.sb3`;
+
 
     downloadSb3.style.display =
         "inline-block";
@@ -461,7 +840,7 @@ async function loadProject() {
 
 
     /*
-     * 数字だけを許可
+     * Project IDは数字のみ
      */
 
     if (!/^\d+$/.test(projectId)) {
@@ -477,14 +856,14 @@ async function loadProject() {
 
     try {
 
+        /*
+         * メタデータ
+         */
+
         setStatus(
             "プロジェクト情報を取得中..."
         );
 
-
-        /*
-         * メタデータ取得
-         */
 
         const metadata =
             await getProjectMetadata(
@@ -503,14 +882,14 @@ async function loadProject() {
         );
 
 
+        /*
+         * SB3
+         */
+
         setStatus(
             "SB3を取得中..."
         );
 
-
-        /*
-         * SB3取得
-         */
 
         const sb3Buffer =
             await getProjectData(
@@ -522,12 +901,13 @@ async function loadProject() {
         currentSb3 =
             sb3Buffer;
 
+
         currentProjectId =
             projectId;
 
 
         /*
-         * ダウンロード設定
+         * ダウンロード
          */
 
         setupSb3Download(
@@ -536,31 +916,38 @@ async function loadProject() {
         );
 
 
+        /*
+         * Scaffolding
+         */
+
         setStatus(
             "TurboWarp Playerに読み込み中..."
         );
 
-
-        /*
-         * ScaffoldingへSB3を読み込む
-         */
 
         await scaffolding.loadProject(
             sb3Buffer
         );
 
 
-        setStatus(
-            "読み込み完了。実行します。",
-            "success"
-        );
+        /*
+         * 読み込み後にレイアウトを再計算
+         */
+
+        scaffolding.relayout();
 
 
         /*
-         * 緑の旗
+         * 実行
          */
 
         scaffolding.greenFlag();
+
+
+        setStatus(
+            "読み込み完了。",
+            "success"
+        );
 
 
         console.log(
@@ -576,7 +963,8 @@ async function loadProject() {
 
 
         setStatus(
-            "エラー: " + error.message,
+            "エラー: " +
+            error.message,
             "error"
         );
 
@@ -585,7 +973,7 @@ async function loadProject() {
 
 
 /* =========================================================
-   プロジェクト停止
+   停止
    ========================================================= */
 
 function stopProject() {
@@ -599,9 +987,11 @@ function stopProject() {
 
         scaffolding.stopAll();
 
+
         setStatus(
             "プロジェクトを停止しました。"
         );
+
 
     } catch (error) {
 
@@ -630,9 +1020,21 @@ stopButton.addEventListener(
 );
 
 
-/*
- * Enterキーでも読み込めるようにする
- */
+normalButton.addEventListener(
+    "click",
+    setNormalMode
+);
+
+
+maximizeButton.addEventListener(
+    "click",
+    setMaximizedMode
+);
+
+
+/* =========================================================
+   Enterキー
+   ========================================================= */
 
 projectIdInput.addEventListener(
     "keydown",
@@ -649,20 +1051,18 @@ projectIdInput.addEventListener(
 
 
 /* =========================================================
-   ページ読み込み時
+   初期化
    ========================================================= */
 
 try {
 
-    /*
-     * ここでfunctionを呼び出す
-     */
-
     initializeScaffolding();
+
 
     setStatus(
         "Project IDを入力してください。"
     );
+
 
 } catch (error) {
 
