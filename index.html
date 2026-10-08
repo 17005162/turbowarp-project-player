@@ -116,472 +116,6 @@ input {
 }
 
 
-
-/* ============================================================
-   高度な設定のUI
-   ============================================================ */
-
-function updateAdvancedSettingsUI() {
-
-    settingCustomFps.checked =
-        advancedSettings.customFps;
-
-    fpsSlider.value =
-        String(advancedSettings.fps);
-
-    fpsValue.textContent =
-        `${advancedSettings.fps} FPS`;
-
-    fpsSliderArea.classList.toggle(
-        "visible",
-        advancedSettings.customFps
-    );
-
-    settingInterpolation.checked =
-        advancedSettings.interpolation;
-
-    settingHighQualityPen.checked =
-        advancedSettings.highQualityPen;
-
-    settingWarpTimer.checked =
-        advancedSettings.warpTimer;
-
-    settingInfiniteClones.checked =
-        advancedSettings.infiniteClones;
-
-    settingRemoveFencing.checked =
-        advancedSettings.removeFencing;
-
-    settingRemoveMiscLimits.checked =
-        advancedSettings.removeMiscLimits;
-
-    settingTurboMode.checked =
-        advancedSettings.turboMode;
-}
-
-
-function openAdvancedSettings() {
-
-    updateAdvancedSettingsUI();
-
-    advancedSettingsOverlay.classList.add(
-        "visible"
-    );
-
-    advancedSettingsOverlay.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-}
-
-
-function closeAdvancedSettings() {
-
-    advancedSettingsOverlay.classList.remove(
-        "visible"
-    );
-
-    advancedSettingsOverlay.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-}
-
-
-/* ============================================================
-   高度な設定 → Runtime適用
-   ============================================================ */
-
-function applyAdvancedSettings() {
-
-    if (!scaffolding || !scaffolding.vm) {
-        return;
-    }
-
-    const vm =
-        scaffolding.vm;
-
-    const runtime =
-        vm.runtime;
-
-
-    /*
-     * FPS
-     *
-     * 0ではなく30を通常時の基準にする。
-     * 「60FPS」をOFFにした場合はScratch標準相当。
-     */
-    try {
-
-        if (
-            runtime &&
-            runtime.frameLoop &&
-            typeof runtime.frameLoop.setFramerate === "function"
-        ) {
-
-            runtime.frameLoop.setFramerate(
-                advancedSettings.customFps
-                    ? advancedSettings.fps
-                    : 30
-            );
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "FPS設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-
-    /*
-     * 補間
-     */
-    try {
-
-        if (
-            typeof vm.setInterpolation === "function"
-        ) {
-
-            vm.setInterpolation(
-                advancedSettings.interpolation
-            );
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "補間設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-
-    /*
-     * 高品質ペン
-     */
-    try {
-
-        if (
-            vm.renderer &&
-            typeof vm.renderer.setUseHighQualityRender === "function"
-        ) {
-
-            vm.renderer.setUseHighQualityRender(
-                advancedSettings.highQualityPen
-            );
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "高品質ペン設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-
-    /*
-     * Warp Timer
-     */
-    try {
-
-        if (
-            runtime &&
-            typeof runtime.setCompilerOptions === "function"
-        ) {
-
-            runtime.setCompilerOptions({
-                warpTimer:
-                    advancedSettings.warpTimer
-            });
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Warp Timer設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-
-    /*
-     * クローン / フェンシング / その他制限
-     *
-     * これらは同じRuntime Options APIにまとめる。
-     */
-    try {
-
-        if (
-            runtime &&
-            typeof runtime.setRuntimeOptions === "function"
-        ) {
-
-            runtime.setRuntimeOptions({
-
-                maxClones:
-                    advancedSettings.infiniteClones
-                        ? Infinity
-                        : 300,
-
-                fencing:
-                    !advancedSettings.removeFencing,
-
-                miscLimits:
-                    !advancedSettings.removeMiscLimits
-
-            });
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "Runtime制限設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-
-    /*
-     * ターボモード
-     */
-    try {
-
-        if (
-            typeof vm.setTurboMode === "function"
-        ) {
-
-            vm.setTurboMode(
-                advancedSettings.turboMode
-            );
-
-        }
-
-    } catch (error) {
-
-        console.warn(
-            "ターボモード設定を適用できませんでした:",
-            error
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   高度な設定の変更
-   ============================================================ */
-
-function refreshAdvancedSettings() {
-
-    applyAdvancedSettings();
-
-    updateAdvancedSettingsUI();
-
-}
-
-
-/* ============================================================
-   高度な設定イベント
-   ============================================================ */
-
-advancedSettingsButton.addEventListener(
-    "click",
-    () => {
-
-        openAdvancedSettings();
-
-    }
-);
-
-
-advancedSettingsCloseButton.addEventListener(
-    "click",
-    () => {
-
-        closeAdvancedSettings();
-
-    }
-);
-
-
-advancedSettingsOverlay.addEventListener(
-    "click",
-    (event) => {
-
-        if (
-            event.target ===
-            advancedSettingsOverlay
-        ) {
-
-            closeAdvancedSettings();
-
-        }
-
-    }
-);
-
-
-document.addEventListener(
-    "keydown",
-    (event) => {
-
-        if (
-            event.key === "Escape" &&
-            advancedSettingsOverlay.classList.contains(
-                "visible"
-            )
-        ) {
-
-            closeAdvancedSettings();
-
-        }
-
-    }
-);
-
-
-settingCustomFps.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.customFps =
-            settingCustomFps.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-fpsSlider.addEventListener(
-    "input",
-    () => {
-
-        advancedSettings.fps =
-            Math.max(
-                1,
-                Math.min(
-                    250,
-                    Number(fpsSlider.value)
-                )
-            );
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingInterpolation.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.interpolation =
-            settingInterpolation.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingHighQualityPen.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.highQualityPen =
-            settingHighQualityPen.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingWarpTimer.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.warpTimer =
-            settingWarpTimer.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingInfiniteClones.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.infiniteClones =
-            settingInfiniteClones.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingRemoveFencing.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.removeFencing =
-            settingRemoveFencing.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingRemoveMiscLimits.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.removeMiscLimits =
-            settingRemoveMiscLimits.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-settingTurboMode.addEventListener(
-    "change",
-    () => {
-
-        advancedSettings.turboMode =
-            settingTurboMode.checked;
-
-        refreshAdvancedSettings();
-
-    }
-);
-
-
-updateAdvancedSettingsUI();
-
-
 /* ============================================================
    ステータス
    ============================================================ */
@@ -1027,17 +561,12 @@ updateAdvancedSettingsUI();
     width: auto;
     min-width: 32px;
     height: 32px;
-
     padding: 0 8px;
-
     border: none;
     border-radius: 4px;
-
     background: transparent;
     color: #333;
-
     font-size: 13px;
-
     cursor: pointer;
 }
 
@@ -1045,26 +574,16 @@ updateAdvancedSettingsUI();
     background: rgba(220, 220, 220, 0.55);
 }
 
-
-/*
- * 高度な設定モーダル
- */
 #advancedSettingsOverlay {
     position: fixed;
-
     left: 0;
     top: 0;
-
     width: 100vw;
     height: 100vh;
-
     display: none;
-
     align-items: center;
     justify-content: center;
-
     background: rgba(0, 0, 0, 0.28);
-
     z-index: 3000;
 }
 
@@ -1072,39 +591,26 @@ updateAdvancedSettingsUI();
     display: flex;
 }
 
-
-/*
- * 設定本体
- */
 #advancedSettingsPanel {
     width: min(440px, calc(100vw - 32px));
     max-height: min(720px, calc(100vh - 32px));
-
     box-sizing: border-box;
-
     overflow-y: auto;
-
     padding: 18px;
-
     background: white;
-
     border: 1px solid #bbb;
     border-radius: 8px;
-
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28);
-
     color: #222;
 }
 
 #advancedSettingsPanel h2 {
     margin: 0 0 16px;
-
     font-size: 20px;
 }
 
 .advanced-setting {
     padding: 11px 0;
-
     border-bottom: 1px solid #e3e3e3;
 }
 
@@ -1114,41 +620,32 @@ updateAdvancedSettingsUI();
 
 .advanced-setting-main {
     display: flex;
-
     align-items: center;
-
     gap: 9px;
-
     min-height: 28px;
 }
 
 .advanced-setting-main input[type="checkbox"] {
     width: 18px;
     height: 18px;
-
     margin: 0;
-
     flex: 0 0 auto;
 }
 
 .advanced-setting-main label {
     cursor: pointer;
-
     font-size: 15px;
 }
 
 .advanced-setting-description {
     margin: 5px 0 0 27px;
-
     color: #666;
-
     font-size: 12px;
     line-height: 1.45;
 }
 
 #fpsSliderArea {
     display: none;
-
     margin: 10px 0 0 27px;
 }
 
@@ -1162,35 +659,25 @@ updateAdvancedSettingsUI();
 
 #fpsValue {
     display: inline-block;
-
     min-width: 58px;
-
     margin-left: 7px;
-
     font-size: 13px;
     font-variant-numeric: tabular-nums;
 }
 
 .advanced-settings-footer {
     display: flex;
-
     justify-content: flex-end;
-
     gap: 8px;
-
     margin-top: 15px;
 }
 
 #advancedSettingsCloseButton {
     height: 34px;
-
     padding: 0 15px;
-
     border: 1px solid #aaa;
     border-radius: 4px;
-
     background: #f5f5f5;
-
     cursor: pointer;
 }
 
@@ -1344,14 +831,13 @@ updateAdvancedSettingsUI();
 </div>
 
 
+
 <!-- ============================================================
      高度な設定
      ============================================================ -->
 
-<div
-    id="advancedSettingsOverlay"
-    aria-hidden="true"
->
+<div id="advancedSettingsOverlay" aria-hidden="true">
+
     <div
         id="advancedSettingsPanel"
         role="dialog"
@@ -1359,225 +845,96 @@ updateAdvancedSettingsUI();
         aria-labelledby="advancedSettingsTitle"
     >
 
-        <h2 id="advancedSettingsTitle">
-            高度な設定
-        </h2>
+        <h2 id="advancedSettingsTitle">高度な設定</h2>
 
-
-        <!-- 60 FPS -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingCustomFps"
-                    type="checkbox"
-                >
-
-                <label for="settingCustomFps">
-                    60FPS
-                </label>
-
+                <input id="settingCustomFps" type="checkbox">
+                <label for="settingCustomFps">60FPS</label>
             </div>
-
             <div class="advanced-setting-description">
-                プロジェクトの実行FPSを変更します。
                 有効にすると1～250FPSで調整できます。
             </div>
-
-            <div
-                id="fpsSliderArea"
-            >
-
-                <input
-                    id="fpsSlider"
-                    type="range"
-                    min="1"
-                    max="250"
-                    step="1"
-                    value="60"
-                >
-
-                <span id="fpsValue">
-                    60 FPS
-                </span>
-
+            <div id="fpsSliderArea">
+                <input id="fpsSlider" type="range" min="1" max="250" step="1" value="60">
+                <span id="fpsValue">60 FPS</span>
             </div>
-
         </div>
 
-
-        <!-- 補間 -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingInterpolation"
-                    type="checkbox"
-                >
-
-                <label for="settingInterpolation">
-                    補間機能
-                </label>
-
+                <input id="settingInterpolation" type="checkbox">
+                <label for="settingInterpolation">補間機能</label>
             </div>
-
             <div class="advanced-setting-description">
-                高FPS時などにスプライトの表示を滑らかにします。
+                高FPS時などに表示を滑らかにします。
             </div>
-
         </div>
 
-
-        <!-- 高品質ペン -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingHighQualityPen"
-                    type="checkbox"
-                >
-
-                <label for="settingHighQualityPen">
-                    ペンできれいに描画する
-                </label>
-
+                <input id="settingHighQualityPen" type="checkbox">
+                <label for="settingHighQualityPen">ペンできれいに描画する</label>
             </div>
-
             <div class="advanced-setting-description">
-                ペン描画の品質を上げます。負荷が増える場合があります。
+                ペン描画の品質を上げます。
             </div>
-
         </div>
 
-
-        <!-- Warp Timer -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingWarpTimer"
-                    type="checkbox"
-                >
-
-                <label for="settingWarpTimer">
-                    Warpタイマー
-                </label>
-
+                <input id="settingWarpTimer" type="checkbox">
+                <label for="settingWarpTimer">Warpタイマー</label>
             </div>
-
             <div class="advanced-setting-description">
                 Warp中のタイマー処理を変更します。
             </div>
-
         </div>
 
-
-        <!-- クローン -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingInfiniteClones"
-                    type="checkbox"
-                >
-
-                <label for="settingInfiniteClones">
-                    クローンの制限を解除
-                </label>
-
+                <input id="settingInfiniteClones" type="checkbox">
+                <label for="settingInfiniteClones">クローンの制限を解除</label>
             </div>
-
             <div class="advanced-setting-description">
                 クローン数の上限を実質的に無制限にします。
-                大量生成するとブラウザが重くなる可能性があります。
             </div>
-
         </div>
 
-
-        <!-- フェンシング -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingRemoveFencing"
-                    type="checkbox"
-                >
-
-                <label for="settingRemoveFencing">
-                    動く範囲と大きさの制限を解除
-                </label>
-
+                <input id="settingRemoveFencing" type="checkbox">
+                <label for="settingRemoveFencing">動く範囲と大きさの制限を解除</label>
             </div>
-
             <div class="advanced-setting-description">
                 スプライトの画面外移動や通常のサイズ制限を緩和します。
             </div>
-
         </div>
 
-
-        <!-- その他 -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingRemoveMiscLimits"
-                    type="checkbox"
-                >
-
-                <label for="settingRemoveMiscLimits">
-                    その他の制限を解除
-                </label>
-
+                <input id="settingRemoveMiscLimits" type="checkbox">
+                <label for="settingRemoveMiscLimits">その他の制限を解除</label>
             </div>
-
             <div class="advanced-setting-description">
-                TurboWarp Runtimeのその他の安全側制限を解除します。
+                TurboWarp Runtimeのその他の制限を解除します。
             </div>
-
         </div>
 
-
-        <!-- Turbo -->
         <div class="advanced-setting">
-
             <div class="advanced-setting-main">
-
-                <input
-                    id="settingTurboMode"
-                    type="checkbox"
-                >
-
-                <label for="settingTurboMode">
-                    ターボモード
-                </label>
-
+                <input id="settingTurboMode" type="checkbox">
+                <label for="settingTurboMode">ターボモード</label>
             </div>
-
             <div class="advanced-setting-description">
                 スクリプト実行の待ち時間を減らし、より高速に実行します。
             </div>
-
         </div>
 
-
         <div class="advanced-settings-footer">
-
-            <button
-                id="advancedSettingsCloseButton"
-                type="button"
-            >
+            <button id="advancedSettingsCloseButton" type="button">
                 閉じる
             </button>
-
         </div>
 
     </div>
@@ -1607,25 +964,15 @@ let projectState = "stopped";
    ============================================================ */
 
 const advancedSettings = {
-
     customFps: false,
-
     fps: 60,
-
     interpolation: false,
-
     highQualityPen: false,
-
     warpTimer: false,
-
     infiniteClones: false,
-
     removeFencing: false,
-
     removeMiscLimits: false,
-
     turboMode: false
-
 };
 
 
@@ -1714,6 +1061,443 @@ const settingRemoveMiscLimits =
 
 const settingTurboMode =
     document.getElementById("settingTurboMode");
+
+/* ============================================================
+   高度な設定
+   ============================================================ */
+
+function updateAdvancedSettingsUI() {
+
+    settingCustomFps.checked =
+        advancedSettings.customFps;
+
+    fpsSlider.value =
+        String(advancedSettings.fps);
+
+    fpsValue.textContent =
+        `${advancedSettings.fps} FPS`;
+
+    fpsSliderArea.classList.toggle(
+        "visible",
+        advancedSettings.customFps
+    );
+
+    settingInterpolation.checked =
+        advancedSettings.interpolation;
+
+    settingHighQualityPen.checked =
+        advancedSettings.highQualityPen;
+
+    settingWarpTimer.checked =
+        advancedSettings.warpTimer;
+
+    settingInfiniteClones.checked =
+        advancedSettings.infiniteClones;
+
+    settingRemoveFencing.checked =
+        advancedSettings.removeFencing;
+
+    settingRemoveMiscLimits.checked =
+        advancedSettings.removeMiscLimits;
+
+    settingTurboMode.checked =
+        advancedSettings.turboMode;
+}
+
+
+function openAdvancedSettings() {
+
+    updateAdvancedSettingsUI();
+
+    advancedSettingsOverlay.classList.add(
+        "visible"
+    );
+
+    advancedSettingsOverlay.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+}
+
+
+function closeAdvancedSettings() {
+
+    advancedSettingsOverlay.classList.remove(
+        "visible"
+    );
+
+    advancedSettingsOverlay.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+}
+
+
+function applyAdvancedSettings() {
+
+    if (!scaffolding || !scaffolding.vm) {
+        return;
+    }
+
+    const vm =
+        scaffolding.vm;
+
+    const runtime =
+        vm.runtime;
+
+
+    /* FPS */
+    try {
+
+        if (
+            runtime &&
+            runtime.frameLoop &&
+            typeof runtime.frameLoop.setFramerate === "function"
+        ) {
+
+            runtime.frameLoop.setFramerate(
+                advancedSettings.customFps
+                    ? advancedSettings.fps
+                    : 30
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "FPS設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+
+    /* 補間 */
+    try {
+
+        if (
+            typeof vm.setInterpolation === "function"
+        ) {
+
+            vm.setInterpolation(
+                advancedSettings.interpolation
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "補間設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+
+    /* 高品質ペン */
+    try {
+
+        if (
+            vm.renderer &&
+            typeof vm.renderer.setUseHighQualityRender === "function"
+        ) {
+
+            vm.renderer.setUseHighQualityRender(
+                advancedSettings.highQualityPen
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "高品質ペン設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+
+    /* Warp Timer */
+    try {
+
+        if (
+            runtime &&
+            typeof runtime.setCompilerOptions === "function"
+        ) {
+
+            runtime.setCompilerOptions({
+                warpTimer:
+                    advancedSettings.warpTimer
+            });
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Warp Timer設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+
+    /* クローン・フェンシング・その他制限 */
+    try {
+
+        if (
+            runtime &&
+            typeof runtime.setRuntimeOptions === "function"
+        ) {
+
+            runtime.setRuntimeOptions({
+
+                maxClones:
+                    advancedSettings.infiniteClones
+                        ? Infinity
+                        : 300,
+
+                fencing:
+                    !advancedSettings.removeFencing,
+
+                miscLimits:
+                    !advancedSettings.removeMiscLimits
+
+            });
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Runtime制限設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+
+    /* ターボモード */
+    try {
+
+        if (
+            typeof vm.setTurboMode === "function"
+        ) {
+
+            vm.setTurboMode(
+                advancedSettings.turboMode
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "ターボモード設定を適用できませんでした:",
+            error
+        );
+
+    }
+
+}
+
+
+function refreshAdvancedSettings() {
+
+    applyAdvancedSettings();
+
+    updateAdvancedSettingsUI();
+
+}
+
+
+advancedSettingsButton.addEventListener(
+    "click",
+    () => {
+
+        openAdvancedSettings();
+
+    }
+);
+
+
+advancedSettingsCloseButton.addEventListener(
+    "click",
+    () => {
+
+        closeAdvancedSettings();
+
+    }
+);
+
+
+advancedSettingsOverlay.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            event.target ===
+            advancedSettingsOverlay
+        ) {
+
+            closeAdvancedSettings();
+
+        }
+
+    }
+);
+
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (
+            event.key === "Escape" &&
+            advancedSettingsOverlay.classList.contains(
+                "visible"
+            )
+        ) {
+
+            closeAdvancedSettings();
+
+        }
+
+    }
+);
+
+
+settingCustomFps.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.customFps =
+            settingCustomFps.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+fpsSlider.addEventListener(
+    "input",
+    () => {
+
+        advancedSettings.fps =
+            Math.max(
+                1,
+                Math.min(
+                    250,
+                    Number(fpsSlider.value)
+                )
+            );
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingInterpolation.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.interpolation =
+            settingInterpolation.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingHighQualityPen.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.highQualityPen =
+            settingHighQualityPen.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingWarpTimer.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.warpTimer =
+            settingWarpTimer.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingInfiniteClones.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.infiniteClones =
+            settingInfiniteClones.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingRemoveFencing.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.removeFencing =
+            settingRemoveFencing.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingRemoveMiscLimits.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.removeMiscLimits =
+            settingRemoveMiscLimits.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+settingTurboMode.addEventListener(
+    "change",
+    () => {
+
+        advancedSettings.turboMode =
+            settingTurboMode.checked;
+
+        refreshAdvancedSettings();
+
+    }
+);
+
+
+updateAdvancedSettingsUI();
+
+
 
 
 
@@ -1837,6 +1621,7 @@ function initializeScaffolding() {
      */
 
     scaffolding.relayout();
+
 
     /*
      * 高度な設定の初期値をRuntimeへ適用
@@ -2378,9 +2163,10 @@ async function loadProject(
             sb3Buffer
         );
 
+
         /*
          * プロジェクト読み込み後に
-         * 高度な設定をRuntimeへ再適用。
+         * 高度な設定をRuntimeへ再適用
          */
         applyAdvancedSettings();
 
