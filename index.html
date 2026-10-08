@@ -1305,24 +1305,9 @@ startButton.addEventListener(
 
         try {
 
-            scaffolding.stopAll();
-
-        } catch (error) {
-
-            console.warn(
-                "stopAll error:",
-                error
-            );
-        }
-
-
-        /*
-         * 最初から実行
-         */
-
-        try {
-
-            scaffolding.start();
+            // TurboWarpの緑の旗と同じ処理を実行。
+            // 実行中・一時停止中でも、最初から再スタートする。
+            scaffolding.greenFlag();
 
         } catch (error) {
 
