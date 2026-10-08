@@ -2251,25 +2251,213 @@ async function getProjectData(
     }
 
 
-    const totalBytes =
-        Number(response.headers.get("content-length")) || 0;
+    /*
+ * SB3をストリームで読み込み、ステージ内に
+ * 「プロジェクトをダウンロード中 (a/b)...」を表示する。
+ *
+ * Content-Length と response.body のサイズ単位が
+ * 圧縮などによって一致しない場合があるため、
+ * a が b を超えないように処理する。
+ */
+
+if (projectLoadingSubtext) {
+    projectLoadingSubtext.textContent =
+        "プロジェクトをダウンロード中...";
+}
 
 
-    if (!response.body || typeof response.body.getReader !== "function") {
+/*
+ * Content-Length
+ *
+ * 圧縮されたレスポンスの場合、
+ * Content-Length は圧縮後のサイズになる一方、
+ * response.body から取得するデータは展開後になる
+ * 場合がある。
+ *
+ * Content-Encoding がある場合は Content-Length を
+ * そのまま分母として使わない。
+ */
+const contentEncoding =
+    response.headers.get("content-encoding");
 
-        const buffer =
-            await response.arrayBuffer();
+const contentLength =
+    Number(response.headers.get("content-length")) || 0;
 
-        const totalKB =
-            Math.max(1, Math.ceil(buffer.byteLength / 1024));
+const hasCompression =
+    !!contentEncoding &&
+    contentEncoding.toLowerCase() !== "identity";
 
-        if (projectLoadingSubtext) {
-            projectLoadingSubtext.textContent =
-                `プロジェクトをダウンロード中 (${totalKB}/${totalKB})...`;
-        }
 
-        return buffer;
+/*
+ * 圧縮されていない場合だけ Content-Length を
+ * 正確な総サイズとして使用する。
+ */
+const totalBytes =
+    !hasCompression && contentLength > 0
+        ? contentLength
+        : 0;
 
+
+if (
+    !response.body ||
+    typeof response.body.getReader !== "function"
+) {
+
+    const buffer =
+        await response.arrayBuffer();
+
+    const totalKB =
+        Math.max(
+            1,
+            Math.ceil(buffer.byteLength / 1024)
+        );
+
+    if (projectLoadingSubtext) {
+        projectLoadingSubtext.textContent =
+            `プロジェクトをダウンロード中 (${totalKB}/${totalKB})...`;
+    }
+
+    return buffer;
+}
+
+
+const reader =
+    response.body.getReader();
+
+
+const chunks = [];
+
+let receivedBytes = 0;
+
+
+while (true) {
+
+    const { done, value } =
+        await reader.read();
+
+
+    if (done) {
+        break;
+    }
+
+
+    if (value) {
+
+        chunks.push(value);
+
+        receivedBytes +=
+            value.byteLength;
+
+    }
+
+
+    /*
+     * 現在受信した量
+     */
+    const receivedKB =
+        Math.max(
+            0,
+            Math.ceil(receivedBytes / 1024)
+        );
+
+
+    let displayCurrent;
+    let displayTotal;
+
+
+    if (totalBytes > 0) {
+
+        /*
+         * Content-Length が使える場合
+         *
+         * 念のため a > b にならないように
+         * Math.min() で制限する。
+         */
+        displayTotal =
+            Math.max(
+                1,
+                Math.ceil(totalBytes / 1024)
+            );
+
+        displayCurrent =
+            Math.min(
+                receivedKB,
+                displayTotal
+            );
+
+    } else {
+
+        /*
+         * 圧縮レスポンスなどで総サイズが
+         * 正確に分からない場合。
+         *
+         * 受信した量を分母にもすることで、
+         * a > b が絶対に発生しないようにする。
+         */
+        displayCurrent =
+            receivedKB;
+
+        displayTotal =
+            Math.max(
+                1,
+                receivedKB
+            );
+
+    }
+
+
+    if (projectLoadingSubtext) {
+
+        projectLoadingSubtext.textContent =
+            `プロジェクトをダウンロード中 (${displayCurrent}/${displayTotal})...`;
+
+    }
+
+}
+
+
+/*
+ * すべて受信したのでUint8Arrayを作成
+ */
+const result =
+    new Uint8Array(receivedBytes);
+
+
+let offset = 0;
+
+
+for (const chunk of chunks) {
+
+    result.set(
+        chunk,
+        offset
+    );
+
+    offset +=
+        chunk.byteLength;
+
+}
+
+
+/*
+ * ダウンロード完了時は必ず a/b = b/b にする。
+ */
+const finalKB =
+    Math.max(
+        1,
+        Math.ceil(receivedBytes / 1024)
+    );
+
+
+if (projectLoadingSubtext) {
+
+    projectLoadingSubtext.textContent =
+        `プロジェクトをダウンロード中 (${finalKB}/${finalKB})...`;
+
+}
+
+
+return result.buffer;
     }
 
 
