@@ -867,7 +867,7 @@ input {
                 <label for="settingInterpolation">補間機能</label>
             </div>
             <div class="advanced-setting-description">
-                高FPS時などに表示を滑らかにします。
+                スプライトの動きを補完し、動きを滑らかにします。
             </div>
         </div>
 
@@ -887,7 +887,7 @@ input {
                 <label for="settingWarpTimer">Warpタイマー</label>
             </div>
             <div class="advanced-setting-description">
-                Warp中のタイマー処理を変更します。
+                長いループに陥っている部分を低フレームで実行しクラッシュを防ぎます。
             </div>
         </div>
 
@@ -907,7 +907,7 @@ input {
                 <label for="settingRemoveFencing">動く範囲と大きさの制限を解除</label>
             </div>
             <div class="advanced-setting-description">
-                スプライトの画面外移動や通常のサイズ制限を緩和します。
+                スプライトを画面外に移動し、その当たり判定を検出したり、大きさの制限を解除します。
             </div>
         </div>
 
@@ -917,7 +917,7 @@ input {
                 <label for="settingRemoveMiscLimits">その他の制限を解除</label>
             </div>
             <div class="advanced-setting-description">
-                TurboWarp Runtimeのその他の制限を解除します。
+                効果音の制限とペンの大きさの制限を解除します。
             </div>
         </div>
 
@@ -2650,12 +2650,72 @@ projectIdInput.addEventListener(
 
 
 /*
- * 緑旗
+ * 緑旗の特殊操作
+ *
+ * 右クリック:
+ *   FPS変更が無効 → 60FPSモードを有効にして60FPS
+ *   FPS変更が有効 → 60FPSモードを無効にして30FPS
+ *
+ * Shift + 左/右クリック:
+ *   ターボモードを有効化
  */
+
+function toggle60FpsModeFromFlag() {
+
+    advancedSettings.customFps =
+        !advancedSettings.customFps;
+
+    if (advancedSettings.customFps) {
+
+        advancedSettings.fps = 60;
+
+    } else {
+
+        advancedSettings.fps = 60;
+
+    }
+
+    refreshAdvancedSettings();
+
+}
+
+
+startButton.addEventListener(
+    "contextmenu",
+    (event) => {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        /* 右クリックでは通常の緑旗処理を行わない */
+        if (event.shiftKey) {
+
+            advancedSettings.turboMode = true;
+            refreshAdvancedSettings();
+            return;
+
+        }
+
+        toggle60FpsModeFromFlag();
+
+    }
+);
+
 
 startButton.addEventListener(
     "click",
-    () => {
+    (event) => {
+
+        if (event.shiftKey) {
+
+            advancedSettings.turboMode = true;
+            refreshAdvancedSettings();
+
+            /* Shift+クリックは緑旗としても実行 */
+            startProject();
+            return;
+
+        }
 
         startProject();
 
