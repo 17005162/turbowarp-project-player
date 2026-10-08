@@ -198,6 +198,37 @@ input {
     gap: 2px;
 }
 
+/* ============================================================
+   高度な設定の状態表示
+   ============================================================ */
+
+#stageStatusIndicators {
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+    margin-left: 4px;
+
+    white-space: nowrap;
+}
+
+.stage-status-indicator {
+    display: none;
+    align-items: center;
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+
+    color: #f39c12;
+}
+
+.stage-status-indicator.visible {
+    display: inline-flex;
+}
+
 
 /* ============================================================
    コントロールボタン
@@ -780,6 +811,14 @@ input {
                     <span class="stop-icon"></span>
                 </button>
 
+
+                <!-- 高度な設定の有効状態 -->
+                <div id="stageStatusIndicators" aria-live="polite">
+                    <span id="stageStatusTurbo" class="stage-status-indicator">ターボモード</span>
+                    <span id="stageStatusFps" class="stage-status-indicator">60 FPS</span>
+                    <span id="stageStatusInterpolation" class="stage-status-indicator">補完機能</span>
+                </div>
+
             </div>
 
 
@@ -1014,6 +1053,15 @@ const pauseButton =
 const stopButton =
     document.getElementById("stopButton");
 
+const stageStatusTurbo =
+    document.getElementById("stageStatusTurbo");
+
+const stageStatusFps =
+    document.getElementById("stageStatusFps");
+
+const stageStatusInterpolation =
+    document.getElementById("stageStatusInterpolation");
+
 const maximizeButton =
     document.getElementById("maximizeButton");
 
@@ -1066,7 +1114,35 @@ const settingTurboMode =
    高度な設定
    ============================================================ */
 
+function updateStageStatusIndicators() {
+
+    if (!stageStatusTurbo || !stageStatusFps || !stageStatusInterpolation) {
+        return;
+    }
+
+    stageStatusTurbo.classList.toggle(
+        "visible",
+        advancedSettings.turboMode
+    );
+
+    stageStatusFps.classList.toggle(
+        "visible",
+        advancedSettings.customFps
+    );
+
+    stageStatusFps.textContent =
+        `${advancedSettings.fps} FPS`;
+
+    stageStatusInterpolation.classList.toggle(
+        "visible",
+        advancedSettings.interpolation
+    );
+}
+
+
 function updateAdvancedSettingsUI() {
+
+    updateStageStatusIndicators();
 
     settingCustomFps.checked =
         advancedSettings.customFps;
@@ -2662,21 +2738,18 @@ projectIdInput.addEventListener(
 
 function toggle60FpsModeFromFlag() {
 
+    /*
+     * FPS変更が無効なら60FPSで有効化。
+     * 有効なら無効化して30FPSへ戻す。
+     */
     advancedSettings.customFps =
         !advancedSettings.customFps;
 
     if (advancedSettings.customFps) {
-
         advancedSettings.fps = 60;
-
-    } else {
-
-        advancedSettings.fps = 60;
-
     }
 
     refreshAdvancedSettings();
-
 }
 
 
@@ -2687,15 +2760,19 @@ startButton.addEventListener(
         event.preventDefault();
         event.stopPropagation();
 
-        /* 右クリックでは通常の緑旗処理を行わない */
+        /*
+         * Shift + 右クリック:
+         * ターボモードを有効化 + 右クリックによるFPS切り替え
+         */
         if (event.shiftKey) {
 
             advancedSettings.turboMode = true;
-            refreshAdvancedSettings();
+            toggle60FpsModeFromFlag();
             return;
 
         }
 
+        /* 右クリックだけならFPSのみ切り替える */
         toggle60FpsModeFromFlag();
 
     }
@@ -2706,22 +2783,27 @@ startButton.addEventListener(
     "click",
     (event) => {
 
+        /*
+         * Shift + 左クリック:
+         * ターボモードだけを有効化。
+         * 緑旗は押した扱いにせず、プロジェクトを開始しない。
+         */
         if (event.shiftKey) {
+
+            event.preventDefault();
+            event.stopPropagation();
 
             advancedSettings.turboMode = true;
             refreshAdvancedSettings();
-
-            /* Shift+クリックは緑旗としても実行 */
-            startProject();
             return;
 
         }
 
+        /* 通常の左クリックだけ緑旗として実行 */
         startProject();
 
     }
 );
-
 
 /*
  * 一時停止 / 再開
