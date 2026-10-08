@@ -1052,24 +1052,45 @@ function startProject() {
 
 
     /*
-     * 緑旗
-     * → 実行中・一時停止中のどちらでも
-     *    最初から実行
+     * 一時停止中
+     * → 続きから再開
      */
 
-    scaffolding.greenFlag();
+    if (
+        projectState === "paused"
+    ) {
+
+        resumeProject();
+
+        return;
+
+    }
 
 
-    projectState =
-        "running";
+    /*
+     * 停止中
+     * → 緑旗
+     */
+
+    if (
+        projectState === "stopped"
+    ) {
+
+        scaffolding.greenFlag();
 
 
-    updateControlButtons();
+        projectState =
+            "running";
 
 
-    setStatus(
-        "実行中"
-    );
+        updateControlButtons();
+
+
+        setStatus(
+            "実行中"
+        );
+
+    }
 
 }
 
