@@ -2766,7 +2766,9 @@ startButton.addEventListener(
          */
         if (event.shiftKey) {
 
-            advancedSettings.turboMode = true;
+            /* Shift + 右クリックではターボモードをON/OFFし、
+             * 右クリックとして60FPSも同時に切り替える。 */
+            advancedSettings.turboMode = !advancedSettings.turboMode;
             toggle60FpsModeFromFlag();
             return;
 
@@ -2793,7 +2795,9 @@ startButton.addEventListener(
             event.preventDefault();
             event.stopPropagation();
 
-            advancedSettings.turboMode = true;
+            /* Shift + 左クリックではターボモードだけをON/OFF。
+             * 緑旗の実行は行わない。 */
+            advancedSettings.turboMode = !advancedSettings.turboMode;
             refreshAdvancedSettings();
             return;
 
