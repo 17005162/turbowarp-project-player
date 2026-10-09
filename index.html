@@ -1473,11 +1473,37 @@ async function loadSavedTurboWarpProjectSettings(sb3Buffer) {
     }
 
     try {
-        const zip = await JSZip.loadAsync(sb3Buffer);
-        const projectFile = zip.file("project.json");
-        if (!projectFile) return;
+        // Scratch/TurboWarpの取得先によって、SB3のZIPではなく
+        // project.json相当のJSON本文が返る場合にも対応する。
+        const bytes = sb3Buffer instanceof ArrayBuffer
+            ? new Uint8Array(sb3Buffer)
+            : new Uint8Array(sb3Buffer.buffer, sb3Buffer.byteOffset, sb3Buffer.byteLength);
+        let firstNonWhitespace = 0;
+        while (firstNonWhitespace < bytes.length &&
+               [0x09, 0x0a, 0x0d, 0x20].includes(bytes[firstNonWhitespace])) {
+            firstNonWhitespace++;
+        }
 
-        const project = JSON.parse(await projectFile.async("string"));
+        let project;
+        if (bytes[firstNonWhitespace] === 0x7b || bytes[firstNonWhitespace] === 0x5b) {
+            // 先頭が { または [ なら、JSONとして解析する。
+            const jsonText = new TextDecoder("utf-8").decode(bytes);
+            project = JSON.parse(jsonText);
+        } else {
+            // 通常のSB3 ZIP形式。
+            if (!window.JSZip) {
+                console.warn("[Project settings] JSZipを読み込めないため、保存設定を確認できません。");
+                return;
+            }
+            const zip = await JSZip.loadAsync(sb3Buffer);
+            const projectFile = zip.file("project.json");
+            if (!projectFile) {
+                console.info("[Project settings] SB3内にproject.jsonがありません。");
+                return;
+            }
+            project = JSON.parse(await projectFile.async("string"));
+        }
+
         let savedConfig = null;
 
         for (const target of (project.targets || [])) {
@@ -2998,15 +3024,6 @@ async function loadProject(
 
         // 読み込み前にSB3内のTurboWarp設定コメントを解析する。
         // URLパラメーターではなく、プロジェクトに保存された設定のみを使う。
-        console.log("[Project settings] buffer type:", sb3Buffer?.constructor?.name);
-        console.log("[Project settings] byteLength:", sb3Buffer?.byteLength);
-        console.log(
-            "[Project settings] first bytes:",
-            Array.from(new Uint8Array(sb3Buffer).slice(0, 8))
-                .map(b => b.toString(16).padStart(2, "0"))
-                .join(" ")
-        );
-
         await loadSavedTurboWarpProjectSettings(sb3Buffer);
 
         await scaffolding.loadProject(
