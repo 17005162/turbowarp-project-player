@@ -2690,12 +2690,17 @@ function connectCloudServer(projectId) {
             }
             const applyUpdate = (name, value) => {
                 if (typeof name !== "string" || value === undefined) return;
-                const normalizedName = name.replace(/^☁\s*/, "");
+                // Scratch VM側のクラウド変数名と一致させるため、サーバーから届いた
+                // 「☁ 変数名」を保持する。接頭辞がないサーバーにも対応して補完する。
+                const cloudVariableName = name.startsWith("☁ ") ? name : `☁ ${name}`;
                 // Scratch VM自身に受信値を適用させる。Stage変数を直接変更しない。
                 const device = scaffolding && scaffolding.vm && scaffolding.vm.runtime &&
                     scaffolding.vm.runtime.ioDevices && scaffolding.vm.runtime.ioDevices.cloud;
                 if (device && typeof device.postData === "function") {
-                    device.postData({ varUpdate: { name: normalizedName, value: String(value) } });
+                    console.debug("[Cloud] 受信したクラウド変数:", cloudVariableName, value);
+                    device.postData({ varUpdate: { name: cloudVariableName, value: String(value) } });
+                } else {
+                    console.warn("[Cloud] 受信値をVMに渡せませんでした。Cloud IO device API unavailable.");
                 }
             };
             if (data && data.method === "set") {
