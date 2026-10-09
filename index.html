@@ -860,6 +860,25 @@ input {
     background: #e8e8e8;
 }
 
+
+#cloudSettingRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+#cloudServerInput {
+    min-width: 0;
+    flex: 1;
+    box-sizing: border-box;
+}
+#cloudStatus {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
 </style>
 </head>
 
@@ -1059,6 +1078,17 @@ input {
                 <button id="applyUsernameButton" type="button">適用</button>
             </div>
             <div id="usernameStatus" role="status" aria-live="polite"></div>
+            <div class="advanced-setting-description" style="margin-left: 0; margin-top: 12px">
+                クラウド変数サーバー
+            </div>
+            <div id="cloudSettingRow">
+                <input id="cloudServerInput" type="text" value="wss://clouddata.turbowarp.org" autocomplete="off" spellcheck="false" aria-label="クラウドサーバーのURL">
+                <button id="connectCloudButton" type="button">接続</button>
+            </div>
+            <div id="cloudStatus" role="status" aria-live="polite">プロジェクト読み込み後に接続します。</div>
+            <div class="advanced-setting-description" style="margin-left: 0">
+                接続には共有済みプロジェクトのIDが使われます。ユーザー名は player と数字の組み合わせ、またはサーバーが認証できるScratchユーザー名を使用してください。
+            </div>
         </div>
 
         <div class="advanced-setting">
@@ -1164,6 +1194,9 @@ input {
    ============================================================ */
 
 let scaffolding = null;
+let cloudSocket = null;
+let cloudProvider = null;
+let cloudConnectedProjectId = null;
 
 function createDefaultUsername() {
     return "player" + String(Math.floor(1000 + Math.random() * 9000));
@@ -1275,6 +1308,13 @@ const applyUsernameButton =
 
 const usernameStatus =
     document.getElementById("usernameStatus");
+
+const cloudServerInput =
+    document.getElementById("cloudServerInput");
+const connectCloudButton =
+    document.getElementById("connectCloudButton");
+const cloudStatus =
+    document.getElementById("cloudStatus");
 
 const settingCustomFps =
     document.getElementById("settingCustomFps");
@@ -1618,6 +1658,7 @@ function applyUsername() {
         try {
             scaffolding.setUsername(selectedUsername);
             usernameStatus.textContent = `ユーザー名を「${selectedUsername}」に変更しました。`;
+            if (currentProjectId) connectCloudServer(currentProjectId);
         } catch (error) {
             console.error("ユーザー名の変更に失敗しました:", error);
             usernameStatus.textContent = "ユーザー名を適用できませんでした。";
@@ -1890,16 +1931,9 @@ function initializeScaffolding() {
 
     scaffolding.setup();
 
-    // Scaffolding初期化後にユーザー名を設定する。
-    // APIが使えない場合でもプレイヤー全体の初期化は続行する。
-    try {
-        if (typeof scaffolding.setUsername === "function") {
-            scaffolding.setUsername(selectedUsername);
-        } else {
-            console.warn("このScaffoldingではsetUsername APIを利用できません。");
-        }
-    } catch (error) {
-        console.error("ユーザー名の初期設定に失敗しました:", error);
+    // Scaffoldingの公開APIでユーザー名を設定する。
+    if (typeof scaffolding.setUsername === "function") {
+        scaffolding.setUsername(selectedUsername);
     }
 
 
@@ -2538,6 +2572,154 @@ function hideProjectLoading() {
 
 
 /* ============================================================
+   TurboWarpクラウド変数接続
+   ============================================================ */
+function setCloudStatus(message) {
+    if (cloudStatus) cloudStatus.textContent = message;
+}
+
+function closeCloudConnection() {
+    cloudConnectedProjectId = null;
+    if (cloudSocket) {
+        try { cloudSocket.close(); } catch (_) {}
+        cloudSocket = null;
+    }
+}
+
+function createTurboWarpCloudProvider(projectId, username) {
+    const getSocket = () => cloudSocket;
+    const sendSet = (name, value) => {
+        const socket = getSocket();
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        socket.send(JSON.stringify({
+            method: "set",
+            user: username,
+            project_id: String(projectId),
+            name: String(name).startsWith("☁ ") ? String(name) : `☁ ${name}`,
+            value: String(value)
+        }));
+    };
+    return {
+        createVariable(name, value) { sendSet(name, value); },
+        updateVariable(name, value) { sendSet(name, value); },
+        deleteVariable() {},
+        renameVariable() {},
+        // Scratch VMのCloud IO providerインターフェース。
+        postIOData(data) {
+            const update = data && (data.varUpdate || data);
+            if (!update || typeof update.name !== "string" || update.value === undefined) return;
+            const runtime = scaffolding && scaffolding.vm && scaffolding.vm.runtime;
+            if (!runtime) return;
+            const stage = typeof runtime.getTargetForStage === "function" ? runtime.getTargetForStage() : null;
+            if (!stage || !stage.variables) return;
+            const serverName = update.name.replace(/^☁\s*/, "");
+            const entry = Object.values(stage.variables).find(variable =>
+                variable && variable.type === "cloud" &&
+                String(variable.name).replace(/^☁\s*/, "") === serverName
+            );
+            if (!entry) return;
+            entry.value = String(update.value);
+            if (typeof runtime.requestUpdateMonitor === "function") {
+                runtime.requestUpdateMonitor(entry.id);
+            }
+            if (typeof runtime.emit === "function") {
+                runtime.emit("CLOUD_DATA", { name: serverName, value: String(update.value) });
+                runtime.emit("HAS_CLOUD_DATA_UPDATE");
+            }
+        },
+        close() { closeCloudConnection(); }
+    };
+}
+
+function connectCloudServer(projectId) {
+    if (!scaffolding || !scaffolding.vm || !scaffolding.vm.runtime) {
+        setCloudStatus("プレイヤーの初期化が完了していません。");
+        return;
+    }
+    const cloudDevice = scaffolding.vm.runtime.ioDevices && scaffolding.vm.runtime.ioDevices.cloud;
+    if (!cloudDevice || typeof cloudDevice.setProvider !== "function" || typeof cloudDevice.postData !== "function") {
+        setCloudStatus("このScaffoldingではクラウド変数APIを利用できません。");
+        console.error("Cloud IO device API is unavailable", cloudDevice);
+        return;
+    }
+
+    let host;
+    try {
+        host = new URL(cloudServerInput.value.trim());
+        if (host.protocol !== "wss:" && host.protocol !== "ws:") {
+            throw new Error("URLは wss:// または ws:// で始めてください。");
+        }
+    } catch (error) {
+        setCloudStatus(error.message || "サーバーURLが正しくありません。");
+        return;
+    }
+    if (host.protocol === "ws:" && location.protocol === "https:") {
+        setCloudStatus("HTTPSのページでは ws:// は使えません。wss:// を指定してください。");
+        return;
+    }
+
+    closeCloudConnection();
+    const username = selectedUsername.trim();
+    const project = String(projectId);
+    setCloudStatus(`接続中: ${host.href} (プロジェクト ${project})`);
+
+    try {
+        cloudSocket = new WebSocket(host.href);
+    } catch (error) {
+        setCloudStatus(`WebSocketを開始できませんでした: ${error.message}`);
+        return;
+    }
+
+    cloudProvider = createTurboWarpCloudProvider(project, username);
+    cloudDevice.setProvider(cloudProvider);
+
+    cloudSocket.addEventListener("open", () => {
+        if (!cloudSocket) return;
+        cloudSocket.send(JSON.stringify({
+            method: "handshake",
+            user: username,
+            project_id: project
+        }));
+        cloudConnectedProjectId = project;
+        setCloudStatus(`サーバーに接続しました: ${host.host} / ${username}`);
+    });
+
+    cloudSocket.addEventListener("message", (event) => {
+        let data;
+        try { data = JSON.parse(event.data); } catch (_) { return; }
+        const applyUpdate = (name, value) => {
+            if (typeof name !== "string" || value === undefined) return;
+            // Cloud IO providerへ受信値を渡す。
+            if (cloudProvider && typeof cloudProvider.postIOData === "function") {
+                cloudProvider.postIOData({ varUpdate: { name, value: String(value) } });
+            }
+        };
+        if (data && data.method === "set") {
+            applyUpdate(data.name, data.value);
+        } else if (data && data.varUpdate) {
+            applyUpdate(data.varUpdate.name, data.varUpdate.value);
+        }
+    });
+
+    cloudSocket.addEventListener("error", () => {
+        setCloudStatus("クラウドサーバーへの接続でエラーが発生しました。URL・通信環境を確認してください。");
+    });
+    cloudSocket.addEventListener("close", (event) => {
+        cloudConnectedProjectId = null;
+        setCloudStatus(`切断されました (code: ${event.code})。必要なら「接続」を押してください。`);
+        cloudSocket = null;
+    });
+}
+
+connectCloudButton.addEventListener("click", () => {
+    if (!currentProjectId) {
+        setCloudStatus("先にプロジェクトを読み込んでください。");
+        return;
+    }
+    connectCloudServer(currentProjectId);
+});
+
+/* ============================================================
    ★ プロジェクト読み込み
    ============================================================ */
 
@@ -2696,6 +2878,8 @@ async function loadProject(
             sb3Buffer
         );
 
+        // プロジェクト読み込み後にクラウドサーバーへ接続する。
+        connectCloudServer(projectId);
 
         /*
          * プロジェクト読み込み後に
