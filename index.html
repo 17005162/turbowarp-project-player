@@ -1197,6 +1197,9 @@ let scaffolding = null;
 let cloudSocket = null;
 let cloudProvider = null;
 let cloudConnectedProjectId = null;
+let cloudReconnectTimer = null;
+let cloudReconnectAttempts = 0;
+let cloudReconnectEnabled = false;
 
 function createDefaultUsername() {
     return "player" + String(Math.floor(1000 + Math.random() * 9000));
@@ -2579,10 +2582,16 @@ function setCloudStatus(message) {
 }
 
 function closeCloudConnection() {
+    cloudReconnectEnabled = false;
     cloudConnectedProjectId = null;
-    if (cloudSocket) {
-        try { cloudSocket.close(); } catch (_) {}
-        cloudSocket = null;
+    if (cloudReconnectTimer) {
+        clearTimeout(cloudReconnectTimer);
+        cloudReconnectTimer = null;
+    }
+    const oldSocket = cloudSocket;
+    cloudSocket = null;
+    if (oldSocket) {
+        try { oldSocket.close(1000, "Client reconnecting or disconnecting"); } catch (_) {}
     }
 }
 
@@ -2604,29 +2613,9 @@ function createTurboWarpCloudProvider(projectId, username) {
         updateVariable(name, value) { sendSet(name, value); },
         deleteVariable() {},
         renameVariable() {},
-        // Scratch VMのCloud IO providerインターフェース。
-        postIOData(data) {
-            const update = data && (data.varUpdate || data);
-            if (!update || typeof update.name !== "string" || update.value === undefined) return;
-            const runtime = scaffolding && scaffolding.vm && scaffolding.vm.runtime;
-            if (!runtime) return;
-            const stage = typeof runtime.getTargetForStage === "function" ? runtime.getTargetForStage() : null;
-            if (!stage || !stage.variables) return;
-            const serverName = update.name.replace(/^☁\s*/, "");
-            const entry = Object.values(stage.variables).find(variable =>
-                variable && variable.type === "cloud" &&
-                String(variable.name).replace(/^☁\s*/, "") === serverName
-            );
-            if (!entry) return;
-            entry.value = String(update.value);
-            if (typeof runtime.requestUpdateMonitor === "function") {
-                runtime.requestUpdateMonitor(entry.id);
-            }
-            if (typeof runtime.emit === "function") {
-                runtime.emit("CLOUD_DATA", { name: serverName, value: String(update.value) });
-                runtime.emit("HAS_CLOUD_DATA_UPDATE");
-            }
-        },
+        // 受信データはWebSocketのmessage handlerからCloud IO device.postDataへ渡す。
+        // provider.postIODataでStage変数を直接書き換えるとVMのクラウド変数処理を迂回してしまう。
+        postIOData() {},
         close() { closeCloudConnection(); }
     };
 }
@@ -2659,6 +2648,8 @@ function connectCloudServer(projectId) {
     }
 
     closeCloudConnection();
+    cloudReconnectEnabled = true;
+    cloudReconnectAttempts = 0;
     const username = selectedUsername.trim();
     const project = String(projectId);
     setCloudStatus(`接続中: ${host.href} (プロジェクト ${project})`);
@@ -2673,41 +2664,73 @@ function connectCloudServer(projectId) {
     cloudProvider = createTurboWarpCloudProvider(project, username);
     cloudDevice.setProvider(cloudProvider);
 
-    cloudSocket.addEventListener("open", () => {
-        if (!cloudSocket) return;
-        cloudSocket.send(JSON.stringify({
+    const socketForThisAttempt = cloudSocket;
+    socketForThisAttempt.addEventListener("open", () => {
+        if (cloudSocket !== socketForThisAttempt) return;
+        socketForThisAttempt.send(JSON.stringify({
             method: "handshake",
             user: username,
             project_id: project
         }));
         cloudConnectedProjectId = project;
+        cloudReconnectAttempts = 0;
         setCloudStatus(`サーバーに接続しました: ${host.host} / ${username}`);
     });
 
-    cloudSocket.addEventListener("message", (event) => {
-        let data;
-        try { data = JSON.parse(event.data); } catch (_) { return; }
-        const applyUpdate = (name, value) => {
-            if (typeof name !== "string" || value === undefined) return;
-            // Cloud IO providerへ受信値を渡す。
-            if (cloudProvider && typeof cloudProvider.postIOData === "function") {
-                cloudProvider.postIOData({ varUpdate: { name, value: String(value) } });
+    socketForThisAttempt.addEventListener("message", (event) => {
+        // cloud-serverは複数のJSONメッセージを改行区切りでまとめて送ることがある。
+        for (const rawMessage of String(event.data).split("\n")) {
+            if (!rawMessage.trim()) continue;
+            let data;
+            try {
+                data = JSON.parse(rawMessage);
+            } catch (error) {
+                console.warn("クラウドサーバーからJSON以外のメッセージを受信:", rawMessage, error);
+                continue;
             }
-        };
-        if (data && data.method === "set") {
-            applyUpdate(data.name, data.value);
-        } else if (data && data.varUpdate) {
-            applyUpdate(data.varUpdate.name, data.varUpdate.value);
+            const applyUpdate = (name, value) => {
+                if (typeof name !== "string" || value === undefined) return;
+                const normalizedName = name.replace(/^☁\s*/, "");
+                // Scratch VM自身に受信値を適用させる。Stage変数を直接変更しない。
+                const device = scaffolding && scaffolding.vm && scaffolding.vm.runtime &&
+                    scaffolding.vm.runtime.ioDevices && scaffolding.vm.runtime.ioDevices.cloud;
+                if (device && typeof device.postData === "function") {
+                    device.postData({ varUpdate: { name: normalizedName, value: String(value) } });
+                }
+            };
+            if (data && data.method === "set") {
+                applyUpdate(data.name, data.value);
+            } else if (data && data.varUpdate) {
+                applyUpdate(data.varUpdate.name, data.varUpdate.value);
+            }
         }
     });
 
-    cloudSocket.addEventListener("error", () => {
-        setCloudStatus("クラウドサーバーへの接続でエラーが発生しました。URL・通信環境を確認してください。");
+    socketForThisAttempt.addEventListener("error", () => {
+        if (cloudSocket === socketForThisAttempt) {
+            setCloudStatus("クラウド接続でエラーが発生しました。切断コードはclose時に表示されます。");
+        }
     });
-    cloudSocket.addEventListener("close", (event) => {
+    socketForThisAttempt.addEventListener("close", (event) => {
+        if (cloudSocket !== socketForThisAttempt) return;
         cloudConnectedProjectId = null;
-        setCloudStatus(`切断されました (code: ${event.code})。必要なら「接続」を押してください。`);
         cloudSocket = null;
+        const reason = event.reason ? ` / ${event.reason}` : "";
+        // 4xxxはサーバーが拒否した状態（ユーザー名、プロジェクトID、プロトコル等）なので自動再接続しない。
+        if (cloudReconnectEnabled && event.code < 4000) {
+            cloudReconnectAttempts += 1;
+            const delay = Math.min(30000, 1000 * Math.pow(2, Math.min(cloudReconnectAttempts - 1, 5)));
+            setCloudStatus(`切断されました (code: ${event.code}${reason})。${Math.round(delay / 1000)}秒後に再接続します。`);
+            cloudReconnectTimer = setTimeout(() => {
+                cloudReconnectTimer = null;
+                if (cloudReconnectEnabled && currentProjectId && String(currentProjectId) === project) {
+                    connectCloudServer(project);
+                }
+            }, delay);
+        } else {
+            cloudReconnectEnabled = false;
+            setCloudStatus(`切断されました (code: ${event.code}${reason})。4xxxの場合は接続設定を確認してください。`);
+        }
     });
 }
 
