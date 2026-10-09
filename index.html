@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>TurboWarp Project Player</title>
+<!-- 安定版：Scaffolding 0.2.0 の初期化・UIイベントを元の状態に戻しています。 -->
 
 <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
 
@@ -1749,28 +1750,6 @@ function initializeScaffolding() {
 
 
     /*
-     * TurboWarp公式クラウドサーバー用のユーザー名。
-     * 公式ドキュメント推奨の player + 2～7桁の数字を使う。
-     * Scaffolding 0.2.0で公開されている setUsername() を利用する。
-     * クラウドの接続先はScaffolding組み込みの既定値を使用する。
-     */
-    const cloudUsername =
-        "player" + String(Math.floor(10 + Math.random() * 9999999));
-
-    if (typeof scaffolding.setUsername === "function") {
-
-        scaffolding.setUsername(cloudUsername);
-
-    } else {
-
-        console.warn(
-            "Scaffolding.setUsername() が見つからないため、クラウドユーザー名を設定できません。"
-        );
-
-    }
-
-
-    /*
      * Scratch標準サイズ
      */
 
@@ -2566,44 +2545,7 @@ async function loadProject(
             sb3Buffer;
 
         currentProjectId =
-            String(projectId);
-
-
-        /*
-         * TurboWarp公式クラウドサーバーの接続先プロジェクトIDを設定。
-         * Scaffoldingの公開型定義にはsetProjectId()がないため、
-         * VMが提供する公開APIを優先し、利用可能な場合のみ呼び出す。
-         */
-        let cloudProjectIdSet = false;
-
-        if (
-            scaffolding.vm &&
-            typeof scaffolding.vm.setProjectId === "function"
-        ) {
-
-            scaffolding.vm.setProjectId(String(projectId));
-            cloudProjectIdSet = true;
-
-        } else if (
-            scaffolding.vm &&
-            scaffolding.vm.runtime &&
-            scaffolding.vm.runtime.ioDevices &&
-            scaffolding.vm.runtime.ioDevices.cloud &&
-            typeof scaffolding.vm.runtime.ioDevices.cloud.setProjectId === "function"
-        ) {
-
-            scaffolding.vm.runtime.ioDevices.cloud.setProjectId(String(projectId));
-            cloudProjectIdSet = true;
-
-        }
-
-        if (!cloudProjectIdSet) {
-
-            console.warn(
-                "このScaffolding/VMでは公開されたクラウドプロジェクトID設定APIを確認できませんでした。クラウド変数が接続されない場合は、VM側のAPI確認が必要です。"
-            );
-
-        }
+            projectId;
 
 
         /* ----------------------------------------------------
