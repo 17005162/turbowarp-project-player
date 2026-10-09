@@ -7,6 +7,7 @@
 <title>TurboWarp Project Player</title>
 <!-- 安定版：Scaffolding 0.2.0 の初期化・UIイベントを元の状態に戻しています。 -->
 
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turbowarp/scaffolding@0.2.0/dist/scaffolding-with-music.js"></script>
 
 <style>
@@ -723,7 +724,8 @@ input {
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.28);
-    z-index: 3000;
+    /* 読み込み画面 (z-index: 10000) より手前に表示する */
+    z-index: 11000;
 }
 
 #advancedSettingsOverlay.visible {
@@ -1458,6 +1460,98 @@ function closeAdvancedSettings() {
 
 }
 
+
+/**
+ * TurboWarpの「設定をプロジェクトに保存」が作る _twconfig_ コメントを
+ * SB3内のproject.jsonから読み取り、保存されている項目だけをPlayerへ反映する。
+ * URLパラメーターは参照しない。
+ */
+async function loadSavedTurboWarpProjectSettings(sb3Buffer) {
+    if (!window.JSZip) {
+        console.warn("[Project settings] JSZipを読み込めないため、保存設定を確認できません。");
+        return;
+    }
+
+    try {
+        const zip = await JSZip.loadAsync(sb3Buffer);
+        const projectFile = zip.file("project.json");
+        if (!projectFile) return;
+
+        const project = JSON.parse(await projectFile.async("string"));
+        let savedConfig = null;
+
+        for (const target of (project.targets || [])) {
+            for (const comment of Object.values(target.comments || {})) {
+                const text = comment && comment.text;
+                if (typeof text !== "string" || !text.includes("_twconfig_")) continue;
+                const start = text.indexOf("{");
+                const end = text.lastIndexOf("}", text.indexOf("_twconfig_"));
+                if (start < 0 || end < start) continue;
+                let jsonText = text.slice(start, end + 1);
+                // TurboWarpの設定コメントではInfinityがJSON拡張として使われる。
+                jsonText = jsonText.replace(/:\s*Infinity\b/g, ':"Infinity"');
+                try { savedConfig = JSON.parse(jsonText); break; } catch (e) {
+                    console.warn("[Project settings] 設定コメントを解析できません:", e);
+                }
+            }
+            if (savedConfig) break;
+        }
+
+        if (!savedConfig) {
+            console.info("[Project settings] プロジェクト内にTurboWarp保存設定はありません。");
+            return;
+        }
+
+        const has = (obj, key) => obj && Object.prototype.hasOwnProperty.call(obj, key);
+        let applied = [];
+        const runtimeOptions = savedConfig.runtimeOptions || {};
+
+        // TurboWarpの保存形式ではFPSは framerate というキーで保存される。
+        // 古い/別形式の設定に備えて fps もフォールバックとして認識する。
+        const savedFpsKey = has(savedConfig, "framerate")
+            ? "framerate"
+            : (has(savedConfig, "fps") ? "fps" : null);
+        if (savedFpsKey !== null) {
+            const fps = Number(savedConfig[savedFpsKey]);
+            if (Number.isFinite(fps) && fps > 0 && fps <= 250) {
+                advancedSettings.customFps = true;
+                advancedSettings.fps = fps;
+                applied.push(`FPS=${fps}`);
+            }
+        }
+        // width / height は画面サイズ変更時の互換性・レイアウト問題を避けるため、現時点では適用しない。
+        if (has(savedConfig, "interpolation")) {
+            advancedSettings.interpolation = Boolean(savedConfig.interpolation);
+            applied.push("補間");
+        }
+        if (has(savedConfig, "hq")) {
+            advancedSettings.highQualityPen = Boolean(savedConfig.hq);
+            applied.push("高品質ペン");
+        }
+        // Warpタイマーはプロジェクト保存設定から読み込まず、手動設定を維持する。
+        if (has(runtimeOptions, "maxClones")) {
+            advancedSettings.infiniteClones = runtimeOptions.maxClones === "Infinity" || runtimeOptions.maxClones === Infinity;
+            applied.push("クローン制限");
+        }
+        if (has(runtimeOptions, "fencing")) {
+            advancedSettings.removeFencing = runtimeOptions.fencing === false;
+            applied.push("移動範囲制限");
+        }
+        if (has(runtimeOptions, "miscLimits")) {
+            advancedSettings.removeMiscLimits = runtimeOptions.miscLimits === false;
+            applied.push("その他の制限");
+        }
+        if (has(savedConfig, "turbo")) {
+            advancedSettings.turboMode = Boolean(savedConfig.turbo);
+            applied.push("ターボモード");
+        }
+
+        updateAdvancedSettingsUI();
+        console.info("[Project settings] プロジェクト保存設定を読み込みました:", applied);
+    } catch (error) {
+        console.warn("[Project settings] 保存設定の読み込みに失敗しました:", error);
+    }
+}
 
 function applyAdvancedSettings() {
 
@@ -2901,6 +2995,10 @@ async function loadProject(
         /*
          * ★ SB3読み込み
          */
+
+        // 読み込み前にSB3内のTurboWarp設定コメントを解析する。
+        // URLパラメーターではなく、プロジェクトに保存された設定のみを使う。
+        await loadSavedTurboWarpProjectSettings(sb3Buffer);
 
         await scaffolding.loadProject(
             sb3Buffer
