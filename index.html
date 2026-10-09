@@ -804,6 +804,42 @@ input {
     font-variant-numeric: tabular-nums;
 }
 
+#usernameSettingRow {
+    display: flex;
+    gap: 8px;
+    margin: 9px 0 0 27px;
+}
+
+#usernameInput {
+    min-width: 0;
+    flex: 1;
+    height: 34px;
+    padding: 0 9px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#applyUsernameButton {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    background: #f5f5f5;
+    cursor: pointer;
+}
+
+#applyUsernameButton:hover {
+    background: #e8e8e8;
+}
+
+#usernameStatus {
+    min-height: 1em;
+    margin: 5px 0 0 27px;
+    color: #666;
+    font-size: 12px;
+}
+
 .advanced-settings-footer {
     display: flex;
     justify-content: flex-end;
@@ -1013,6 +1049,20 @@ input {
 
         <div class="advanced-setting">
             <div class="advanced-setting-main">
+                <label for="usernameInput">ユーザー名</label>
+            </div>
+            <div class="advanced-setting-description" style="margin-left: 0">
+                Scratch/TurboWarpのユーザー名ブロックなどに使う名前です。初期値は player と4桁の数字です。
+            </div>
+            <div id="usernameSettingRow">
+                <input id="usernameInput" type="text" maxlength="20" autocomplete="off" spellcheck="false" aria-label="ユーザー名">
+                <button id="applyUsernameButton" type="button">適用</button>
+            </div>
+            <div id="usernameStatus" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="advanced-setting">
+            <div class="advanced-setting-main">
                 <input id="settingCustomFps" type="checkbox">
                 <label for="settingCustomFps">60FPS</label>
             </div>
@@ -1115,6 +1165,12 @@ input {
 
 let scaffolding = null;
 
+function createDefaultUsername() {
+    return "player" + String(Math.floor(1000 + Math.random() * 9000));
+}
+
+let selectedUsername = createDefaultUsername();
+
 let projectLoaded = false;
 
 let currentProjectId = null;
@@ -1211,6 +1267,15 @@ const advancedSettingsOverlay =
 const advancedSettingsCloseButton =
     document.getElementById("advancedSettingsCloseButton");
 
+const usernameInput =
+    document.getElementById("usernameInput");
+
+const applyUsernameButton =
+    document.getElementById("applyUsernameButton");
+
+const usernameStatus =
+    document.getElementById("usernameStatus");
+
 const settingCustomFps =
     document.getElementById("settingCustomFps");
 
@@ -1243,6 +1308,8 @@ const settingRemoveMiscLimits =
 
 const settingTurboMode =
     document.getElementById("settingTurboMode");
+
+usernameInput.value = selectedUsername;
 
 /* ============================================================
    高度な設定
@@ -1277,6 +1344,10 @@ function updateStageStatusIndicators() {
 function updateAdvancedSettingsUI() {
 
     updateStageStatusIndicators();
+
+    if (document.activeElement !== usernameInput) {
+        usernameInput.value = selectedUsername;
+    }
 
     settingCustomFps.checked =
         advancedSettings.customFps;
@@ -1525,6 +1596,44 @@ function refreshAdvancedSettings() {
 
 }
 
+
+function applyUsername() {
+    const requestedUsername = usernameInput.value.trim();
+
+    if (!requestedUsername) {
+        usernameStatus.textContent = "ユーザー名を入力してください。";
+        usernameInput.focus();
+        return;
+    }
+
+    if (requestedUsername.length > 20) {
+        usernameStatus.textContent = "ユーザー名は20文字以内にしてください。";
+        return;
+    }
+
+    selectedUsername = requestedUsername;
+    usernameInput.value = selectedUsername;
+
+    if (scaffolding && typeof scaffolding.setUsername === "function") {
+        try {
+            scaffolding.setUsername(selectedUsername);
+            usernameStatus.textContent = `ユーザー名を「${selectedUsername}」に変更しました。`;
+        } catch (error) {
+            console.error("ユーザー名の変更に失敗しました:", error);
+            usernameStatus.textContent = "ユーザー名を適用できませんでした。";
+        }
+    } else {
+        usernameStatus.textContent = "設定しました。プレイヤー初期化後に適用されます。";
+    }
+}
+
+applyUsernameButton.addEventListener("click", applyUsername);
+usernameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        applyUsername();
+    }
+});
 
 advancedSettingsButton.addEventListener(
     "click",
@@ -1780,6 +1889,18 @@ function initializeScaffolding() {
      */
 
     scaffolding.setup();
+
+    // Scaffolding初期化後にユーザー名を設定する。
+    // APIが使えない場合でもプレイヤー全体の初期化は続行する。
+    try {
+        if (typeof scaffolding.setUsername === "function") {
+            scaffolding.setUsername(selectedUsername);
+        } else {
+            console.warn("このScaffoldingではsetUsername APIを利用できません。");
+        }
+    } catch (error) {
+        console.error("ユーザー名の初期設定に失敗しました:", error);
+    }
 
 
     /*
