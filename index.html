@@ -2998,6 +2998,15 @@ async function loadProject(
 
         // 読み込み前にSB3内のTurboWarp設定コメントを解析する。
         // URLパラメーターではなく、プロジェクトに保存された設定のみを使う。
+        console.log("[Project settings] buffer type:", sb3Buffer?.constructor?.name);
+        console.log("[Project settings] byteLength:", sb3Buffer?.byteLength);
+        console.log(
+            "[Project settings] first bytes:",
+            Array.from(new Uint8Array(sb3Buffer).slice(0, 8))
+                .map(b => b.toString(16).padStart(2, "0"))
+                .join(" ")
+        );
+
         await loadSavedTurboWarpProjectSettings(sb3Buffer);
 
         await scaffolding.loadProject(
