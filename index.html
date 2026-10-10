@@ -1999,38 +1999,6 @@ function setStatus(text) {
    Scaffolding初期化
    ============================================================ */
 
-/*
- * ステージサイズ変更後のレイアウト再同期。
- * 最大化切替ではCSS反映とScaffolding側のサイズ計算が
- * 同じフレームで完了しない場合があるため、複数フレームで再確認する。
- */
-let stageRelayoutTimer = null;
-
-function scheduleStageRelayout() {
-    if (!scaffolding) return;
-
-    if (stageRelayoutTimer !== null) {
-        clearTimeout(stageRelayoutTimer);
-    }
-
-    requestAnimationFrame(() => {
-        if (!scaffolding) return;
-        scaffolding.relayout();
-
-        requestAnimationFrame(() => {
-            if (!scaffolding) return;
-            scaffolding.relayout();
-        });
-    });
-
-    // CSSレイアウト確定後にも一度同期し、切替直後の座標ずれを抑える。
-    stageRelayoutTimer = setTimeout(() => {
-        stageRelayoutTimer = null;
-        if (scaffolding) scaffolding.relayout();
-    }, 80);
-}
-
-
 function initializeScaffolding() {
 
     if (scaffolding) {
@@ -2162,7 +2130,13 @@ function initializeScaffolding() {
 
         const observer =
             new ResizeObserver(() => {
-                scheduleStageRelayout();
+
+                if (scaffolding) {
+
+                    scaffolding.relayout();
+
+                }
+
             });
 
 
@@ -2171,9 +2145,6 @@ function initializeScaffolding() {
         );
 
     }
-
-    // ブラウザーウィンドウのサイズ変更も別経路で監視する。
-    window.addEventListener("resize", scheduleStageRelayout);
 
 }
 
@@ -3330,16 +3301,21 @@ function applyStageLayout() {
         scaffolding.relayout();
 
 
-        scheduleStageRelayout();
-
         requestAnimationFrame(() => {
+
             if (
                 scaffolding &&
-                !playerArea.classList.contains("maximized")
+                !playerArea.classList.contains(
+                    "maximized"
+                )
             ) {
+
                 scaffolding.relayout();
+
             }
+
         });
+
 
         return;
 
@@ -3377,12 +3353,14 @@ function applyStageLayout() {
     scaffolding.relayout();
 
 
-    scheduleStageRelayout();
-
     requestAnimationFrame(() => {
+
         if (scaffolding) {
+
             scaffolding.relayout();
+
         }
+
     });
 
 }
@@ -3749,6 +3727,33 @@ window.addEventListener(
         }
 
     }
+);
+
+
+/*
+ * ページスクロール後にステージの表示位置とマウス座標の基準を再同期する。
+ * Scaffolding側がスクロール時の位置変化を自動検出しない場合への対策。
+ */
+let scrollRelayoutScheduled = false;
+
+window.addEventListener(
+    "scroll",
+    () => {
+        if (!scaffolding || scrollRelayoutScheduled) {
+            return;
+        }
+
+        scrollRelayoutScheduled = true;
+
+        requestAnimationFrame(() => {
+            scrollRelayoutScheduled = false;
+
+            if (scaffolding) {
+                scaffolding.relayout();
+            }
+        });
+    },
+    { passive: true }
 );
 
 
