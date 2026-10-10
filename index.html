@@ -2736,6 +2736,9 @@ function createTurboWarpCloudProvider(projectId, username) {
         // 受信データはWebSocketのmessage handlerからCloud IO device.postDataへ渡す。
         // provider.postIODataでStage変数を直接書き換えるとVMのクラウド変数処理を迂回してしまう。
         postIOData() {},
+        // TurboWarpのCloud IO deviceがプロジェクト切替時に呼び出すAPI。
+        // 旧API名close()も残し、両方から安全に切断できるようにする。
+        requestCloseConnection() { closeCloudConnection(); },
         close() { closeCloudConnection(); }
     };
 }
@@ -2881,6 +2884,9 @@ async function loadProject(
     /* ステージ部分をTurboWarp風の読み込み画面にする */
     showProjectLoading();
 
+    // 再読み込み時は前のプロジェクトのクラウド接続・再接続タイマーを先に破棄する。
+    // VMのloadProject()が旧providerを閉じる場合にもrequestCloseConnection()で対応する。
+    closeCloudConnection();
 
     loadButton.disabled =
         true;
