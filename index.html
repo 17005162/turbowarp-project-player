@@ -881,6 +881,38 @@ input {
     overflow-wrap: anywhere;
 }
 
+
+#stageSizeControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+#stageSizeControls input {
+    box-sizing: border-box;
+    width: 120px;
+    height: 42px;
+    padding: 0 15px;
+    border: 1px solid #d5d5d5;
+    border-radius: 24px;
+    background: #fff;
+    color: #333;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+}
+#stageSizeControls input:focus {
+    outline: 2px solid #4c97ff;
+    outline-offset: 1px;
+}
+#stageSizeControls span {
+    color: #555;
+    font-weight: 700;
+}
+@media (max-width: 480px) {
+    #stageSizeControls input { width: 85px; }
+}
+
 </style>
 </head>
 
@@ -1070,6 +1102,20 @@ input {
 
         <div class="advanced-setting">
             <div class="advanced-setting-main">
+                <label for="stageWidthInput">ステージの大きさを変える：</label>
+                <div id="stageSizeControls">
+                    <input id="stageWidthInput" type="number" min="1" max="4096" step="1" value="480" aria-label="ステージの幅">
+                    <span aria-hidden="true">×</span>
+                    <input id="stageHeightInput" type="number" min="1" max="4096" step="1" value="360" aria-label="ステージの高さ">
+                </div>
+            </div>
+            <div class="advanced-setting-description">
+                幅と高さを指定します。変更はすぐに反映されます。
+            </div>
+        </div>
+
+        <div class="advanced-setting">
+            <div class="advanced-setting-main">
                 <label for="usernameInput">ユーザー名</label>
             </div>
             <div class="advanced-setting-description" style="margin-left: 0">
@@ -1222,6 +1268,8 @@ let projectState = "stopped";
    ============================================================ */
 
 const advancedSettings = {
+    stageWidth: 480,
+    stageHeight: 360,
     customFps: false,
     fps: 60,
     interpolation: false,
@@ -1321,6 +1369,12 @@ const connectCloudButton =
 const cloudStatus =
     document.getElementById("cloudStatus");
 
+const stageWidthInput =
+    document.getElementById("stageWidthInput");
+
+const stageHeightInput =
+    document.getElementById("stageHeightInput");
+
 const settingCustomFps =
     document.getElementById("settingCustomFps");
 
@@ -1389,6 +1443,9 @@ function updateStageStatusIndicators() {
 function updateAdvancedSettingsUI() {
 
     updateStageStatusIndicators();
+
+    stageWidthInput.value = String(advancedSettings.stageWidth);
+    stageHeightInput.value = String(advancedSettings.stageHeight);
 
     if (document.activeElement !== usernameInput) {
         usernameInput.value = selectedUsername;
@@ -1545,7 +1602,17 @@ async function loadSavedTurboWarpProjectSettings(sb3Buffer) {
                 applied.push(`FPS=${fps}`);
             }
         }
-        // width / height は画面サイズ変更時の互換性・レイアウト問題を避けるため、現時点では適用しない。
+        // TurboWarpのプロジェクト保存設定に含まれるカスタムステージサイズを読み込む。
+        const savedWidth = Number(savedConfig.width);
+        const savedHeight = Number(savedConfig.height);
+        if (has(savedConfig, "width") && has(savedConfig, "height") &&
+            Number.isInteger(savedWidth) && Number.isInteger(savedHeight) &&
+            savedWidth >= 1 && savedWidth <= 4096 &&
+            savedHeight >= 1 && savedHeight <= 4096) {
+            advancedSettings.stageWidth = savedWidth;
+            advancedSettings.stageHeight = savedHeight;
+            applied.push(`ステージサイズ=${savedWidth}×${savedHeight}`);
+        }
         if (has(savedConfig, "interpolation")) {
             advancedSettings.interpolation = Boolean(savedConfig.interpolation);
             applied.push("補間");
@@ -1590,6 +1657,30 @@ function applyAdvancedSettings() {
 
     const runtime =
         vm.runtime;
+
+
+    /* ステージサイズ */
+    try {
+        const width = Math.round(Number(advancedSettings.stageWidth));
+        const height = Math.round(Number(advancedSettings.stageHeight));
+
+        if (Number.isFinite(width) && Number.isFinite(height) &&
+            width >= 1 && width <= 4096 && height >= 1 && height <= 4096) {
+            if (typeof vm.setStageSize === "function") {
+                vm.setStageSize(width, height);
+            }
+            scaffolding.width = width;
+            scaffolding.height = height;
+
+            requestAnimationFrame(() => {
+                if (scaffolding && typeof scaffolding.relayout === "function") {
+                    scaffolding.relayout();
+                }
+            });
+        }
+    } catch (error) {
+        console.warn("ステージサイズ設定を適用できませんでした:", error);
+    }
 
 
     /* FPS */
@@ -1854,6 +1945,23 @@ document.addEventListener(
     }
 );
 
+
+function applyStageSizeFromInputs() {
+    const width = Number(stageWidthInput.value);
+    const height = Number(stageHeightInput.value);
+
+    if (!Number.isInteger(width) || !Number.isInteger(height) ||
+        width < 1 || width > 4096 || height < 1 || height > 4096) {
+        return;
+    }
+
+    advancedSettings.stageWidth = width;
+    advancedSettings.stageHeight = height;
+    refreshAdvancedSettings();
+}
+
+stageWidthInput.addEventListener("change", applyStageSizeFromInputs);
+stageHeightInput.addEventListener("change", applyStageSizeFromInputs);
 
 settingCustomFps.addEventListener(
     "change",
