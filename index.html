@@ -2715,8 +2715,19 @@ function closeCloudConnection() {
     }
 }
 
-function createTurboWarpCloudProvider(projectId, username) {
-    const getSocket = () => cloudSocket;
+function createTurboWarpCloudProvider(projectId, username, providerSocket) {
+    // このproviderが作成された時点のWebSocketだけを扱う。
+    // 古いproviderの終了処理が、新しい接続まで閉じてしまうのを防ぐ。
+    const getSocket = () => providerSocket;
+    const closeProviderSocket = () => {
+        if (cloudSocket === providerSocket) {
+            closeCloudConnection();
+        } else if (providerSocket &&
+                   (providerSocket.readyState === WebSocket.CONNECTING ||
+                    providerSocket.readyState === WebSocket.OPEN)) {
+            try { providerSocket.close(1000, "Old cloud provider disconnected"); } catch (_) {}
+        }
+    };
     const sendSet = (name, value) => {
         const socket = getSocket();
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -2738,8 +2749,8 @@ function createTurboWarpCloudProvider(projectId, username) {
         postIOData() {},
         // TurboWarpのCloud IO deviceがプロジェクト切替時に呼び出すAPI。
         // 旧API名close()も残し、両方から安全に切断できるようにする。
-        requestCloseConnection() { closeCloudConnection(); },
-        close() { closeCloudConnection(); }
+        requestCloseConnection() { closeProviderSocket(); },
+        close() { closeProviderSocket(); }
     };
 }
 
@@ -2784,10 +2795,10 @@ function connectCloudServer(projectId) {
         return;
     }
 
-    cloudProvider = createTurboWarpCloudProvider(project, username);
+    const socketForThisAttempt = cloudSocket;
+    cloudProvider = createTurboWarpCloudProvider(project, username, socketForThisAttempt);
     cloudDevice.setProvider(cloudProvider);
 
-    const socketForThisAttempt = cloudSocket;
     socketForThisAttempt.addEventListener("open", () => {
         if (cloudSocket !== socketForThisAttempt) return;
         socketForThisAttempt.send(JSON.stringify({
