@@ -31,7 +31,8 @@ body {
 }
 
 body {
-    overflow-x: hidden;
+    overflow-x: auto;
+    overflow-y: auto;
 }
 
 
@@ -54,9 +55,9 @@ input {
    ============================================================ */
 
 #page {
+    box-sizing: border-box;
     width: 100%;
     min-height: 100vh;
-
     padding: 20px;
 }
 
@@ -922,8 +923,42 @@ input {
     white-space: nowrap;
 }
 #resetStageSizeButton:hover { background: #ededed; }
+
+/* ステージサイズ行はラベルと入力欄を上下に分け、狭い画面でも崩さない */
+#stageSizeSetting .advanced-setting-main {
+    display: block;
+    min-width: 0;
+}
+#stageSizeSetting .advanced-setting-main label {
+    display: block;
+    margin: 0 0 9px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+#stageSizeControls {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+#stageSizeControls input {
+    width: auto;
+    min-width: 0;
+    max-width: 120px;
+    flex: 1 1 75px;
+}
+#resetStageSizeButton {
+    flex: 0 0 auto;
+}
+#stageSizeSetting .advanced-setting-description {
+    margin-left: 0;
+}
 @media (max-width: 480px) {
-    #stageSizeControls input { width: 85px; }
+    #stageSizeControls input { width: auto; }
 }
 
 </style>
@@ -1113,7 +1148,7 @@ input {
 
         <h2 id="advancedSettingsTitle">高度な設定</h2>
 
-        <div class="advanced-setting">
+        <div class="advanced-setting" id="stageSizeSetting">
             <div class="advanced-setting-main">
                 <label for="stageWidthInput">ステージの大きさを変える：</label>
                 <div id="stageSizeControls">
@@ -3402,7 +3437,7 @@ function applyStageLayout() {
 
     if (playerArea.classList.contains("maximized")) {
         const toolbarHeight = 40;
-        const availableWidth = Math.max(1, window.innerWidth);
+        const availableWidth = Math.max(1, document.documentElement.clientWidth - 20);
         const availableHeight = Math.max(1, window.innerHeight - toolbarHeight);
         const scale = Math.min(availableWidth / stageWidth, availableHeight / stageHeight);
         displayWidth = Math.max(1, Math.floor(stageWidth * scale));
@@ -3412,12 +3447,23 @@ function applyStageLayout() {
         playerArea.style.height = "";
     }
 
-    // CSS上の表示サイズとScaffoldingの論理サイズを分離し、
-    // 通常時は実寸、最大化時は縦横比を保った縮小表示にする。
     playerArea.style.width = `${displayWidth}px`;
     stageToolbar.style.width = `${displayWidth}px`;
     projectElement.style.width = `${displayWidth}px`;
     projectElement.style.height = `${displayHeight}px`;
+
+    // 画面内に収まる場合だけ中央寄せ。超える場合は左端から配置し、横スクロール可能にする。
+    const pageStyle = getComputedStyle(page);
+    const pagePaddingLeft = parseFloat(pageStyle.paddingLeft) || 0;
+    const pagePaddingRight = parseFloat(pageStyle.paddingRight) || 0;
+    const availablePageWidth = Math.max(1, document.documentElement.clientWidth - pagePaddingLeft - pagePaddingRight);
+    if (displayWidth <= availablePageWidth) {
+        playerArea.style.marginLeft = "auto";
+        playerArea.style.marginRight = "auto";
+    } else {
+        playerArea.style.marginLeft = "0px";
+        playerArea.style.marginRight = "0px";
+    }
 
     scaffolding.width = stageWidth;
     scaffolding.height = stageHeight;
