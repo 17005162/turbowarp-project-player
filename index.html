@@ -909,6 +909,19 @@ input {
     color: #555;
     font-weight: 700;
 }
+#resetStageSizeButton {
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #d5d5d5;
+    border-radius: 22px;
+    background: #f7f7f7;
+    color: #333;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+#resetStageSizeButton:hover { background: #ededed; }
 @media (max-width: 480px) {
     #stageSizeControls input { width: 85px; }
 }
@@ -1107,10 +1120,11 @@ input {
                     <input id="stageWidthInput" type="number" min="1" max="4096" step="1" value="480" aria-label="ステージの幅">
                     <span aria-hidden="true">×</span>
                     <input id="stageHeightInput" type="number" min="1" max="4096" step="1" value="360" aria-label="ステージの高さ">
+                    <button id="resetStageSizeButton" type="button">リセット</button>
                 </div>
             </div>
             <div class="advanced-setting-description">
-                幅と高さを指定します。変更はすぐに反映されます。
+                幅と高さを指定し、変更はすぐに反映されます。※これは実験的機能です。
             </div>
         </div>
 
@@ -1374,6 +1388,8 @@ const stageWidthInput =
 
 const stageHeightInput =
     document.getElementById("stageHeightInput");
+const resetStageSizeButton =
+    document.getElementById("resetStageSizeButton");
 
 const settingCustomFps =
     document.getElementById("settingCustomFps");
@@ -1672,11 +1688,8 @@ function applyAdvancedSettings() {
             scaffolding.width = width;
             scaffolding.height = height;
 
-            requestAnimationFrame(() => {
-                if (scaffolding && typeof scaffolding.relayout === "function") {
-                    scaffolding.relayout();
-                }
-            });
+            // 外枠・ツールバー・表示領域もステージの実寸に合わせる。
+            applyStageLayout();
         }
     } catch (error) {
         console.warn("ステージサイズ設定を適用できませんでした:", error);
@@ -1952,6 +1965,8 @@ function applyStageSizeFromInputs() {
 
     if (!Number.isInteger(width) || !Number.isInteger(height) ||
         width < 1 || width > 4096 || height < 1 || height > 4096) {
+        stageWidthInput.value = String(advancedSettings.stageWidth);
+        stageHeightInput.value = String(advancedSettings.stageHeight);
         return;
     }
 
@@ -1960,8 +1975,17 @@ function applyStageSizeFromInputs() {
     refreshAdvancedSettings();
 }
 
+function resetStageSize() {
+    advancedSettings.stageWidth = 480;
+    advancedSettings.stageHeight = 360;
+    stageWidthInput.value = "480";
+    stageHeightInput.value = "360";
+    refreshAdvancedSettings();
+}
+
 stageWidthInput.addEventListener("change", applyStageSizeFromInputs);
 stageHeightInput.addEventListener("change", applyStageSizeFromInputs);
+resetStageSizeButton.addEventListener("click", resetStageSize);
 
 settingCustomFps.addEventListener(
     "change",
@@ -3370,107 +3394,40 @@ function applyStageLayout() {
         return;
     }
 
+    const stageWidth = Math.max(1, Math.round(Number(advancedSettings.stageWidth) || 480));
+    const stageHeight = Math.max(1, Math.round(Number(advancedSettings.stageHeight) || 360));
 
-    /*
-     * ========================================================
-     * 通常
-     * ========================================================
-     */
+    let displayWidth = stageWidth;
+    let displayHeight = stageHeight;
 
-    if (
-        !playerArea.classList.contains(
-            "maximized"
-        )
-    ) {
-
-        playerArea.style.width =
-            "480px";
-
-        playerArea.style.height =
-            "";
-
-
-        stageToolbar.style.width =
-            "480px";
-
-
-        projectElement.style.width =
-            "480px";
-
-        projectElement.style.height =
-            "360px";
-
-
-        /*
-         * 強制的に次のフレームで
-         * Scaffoldingの実サイズを更新。
-         */
-
-        scaffolding.relayout();
-
-
-        requestAnimationFrame(() => {
-
-            if (
-                scaffolding &&
-                !playerArea.classList.contains(
-                    "maximized"
-                )
-            ) {
-
-                scaffolding.relayout();
-
-            }
-
-        });
-
-
-        return;
-
+    if (playerArea.classList.contains("maximized")) {
+        const toolbarHeight = 40;
+        const availableWidth = Math.max(1, window.innerWidth);
+        const availableHeight = Math.max(1, window.innerHeight - toolbarHeight);
+        const scale = Math.min(availableWidth / stageWidth, availableHeight / stageHeight);
+        displayWidth = Math.max(1, Math.floor(stageWidth * scale));
+        displayHeight = Math.max(1, Math.floor(stageHeight * scale));
+        playerArea.style.height = `${displayHeight + toolbarHeight}px`;
+    } else {
+        playerArea.style.height = "";
     }
 
+    // CSS上の表示サイズとScaffoldingの論理サイズを分離し、
+    // 通常時は実寸、最大化時は縦横比を保った縮小表示にする。
+    playerArea.style.width = `${displayWidth}px`;
+    stageToolbar.style.width = `${displayWidth}px`;
+    projectElement.style.width = `${displayWidth}px`;
+    projectElement.style.height = `${displayHeight}px`;
 
-    /*
-     * ========================================================
-     * 最大化
-     * ========================================================
-     */
-
-    const size =
-        calculateMaxStageSize();
-
-
-    playerArea.style.width =
-        `${size.width}px`;
-
-    playerArea.style.height =
-        `${size.height + 40}px`;
-
-
-    stageToolbar.style.width =
-        `${size.width}px`;
-
-
-    projectElement.style.width =
-        `${size.width}px`;
-
-    projectElement.style.height =
-        `${size.height}px`;
-
-
+    scaffolding.width = stageWidth;
+    scaffolding.height = stageHeight;
     scaffolding.relayout();
 
-
     requestAnimationFrame(() => {
-
         if (scaffolding) {
-
             scaffolding.relayout();
-
         }
-
     });
-
 }
 
 
@@ -3495,24 +3452,6 @@ function toggleMaximize() {
         playerArea.classList.remove(
             "maximized"
         );
-
-
-        playerArea.style.width =
-            "480px";
-
-        playerArea.style.height =
-            "";
-
-
-        stageToolbar.style.width =
-            "480px";
-
-
-        projectElement.style.width =
-            "480px";
-
-        projectElement.style.height =
-            "360px";
 
 
         maximizeButton.textContent =
